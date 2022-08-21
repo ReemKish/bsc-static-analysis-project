@@ -3,7 +3,6 @@
 # Exposes API for tokenization.
 # When run directly, receives program filename from commandline and prints its tokenization.
 
-import sys
 from typing import *
 from enum import Enum
 
@@ -39,6 +38,7 @@ class Op(Enum):
 #      Token classes
 # =========================================================
 
+# ----- Generic Token ------------
 class Token:
     def __init__(self, kind : TokenKind):
         self.kind = kind
@@ -49,30 +49,35 @@ class Token:
     def __repr__(self):
         return str(self)
 
+# ----- Label Token --------------
 class LabelTok(Token):
     def __init__(self, ind : int):
         Token.__init__(self, TokenKind.LABEL)
         self.ind : int = ind
     __str__ = lambda self: f"Label[{self.ind}]"
 
+# ----- Variable Token -----------
 class VarTok(Token):
     def __init__(self, name : str):
         Token.__init__(self, TokenKind.VARIABLE)
         self.name : str = name
     __str__ = lambda self: f"Var[{self.name}]"
 
+# ----- Integer Token ------------
 class IntTok(Token):
     def __init__(self, val : int):
         Token.__init__(self, TokenKind.INTEGER)
         self.val : int = val
     __str__ = lambda self: f"Int[{self.val}]"
 
+# ----- Operator Token -----------
 class OpTok(Token):
     def __init__(self, op : Op):
         Token.__init__(self, TokenKind.OPERATOR)
         self.op : Op = op
     __str__ = lambda self: f"Op[{self.op._name_}]"
 
+# ----- Boolean Token ------------
 class BoolTok(Token):
     def __init__(self, val : bool):
         Token.__init__(self, TokenKind.BOOLEAN)
@@ -210,7 +215,8 @@ def _print_tokens(tokens):
     print("\n")
 
 def _main():
-    fname = sys.argv[1]
+    from sys import argv
+    fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
     tokens = Tokenizer(text).tokens
