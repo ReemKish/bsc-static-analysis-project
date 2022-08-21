@@ -1,4 +1,4 @@
-# ===== tokenizer.py ============================
+# ===== tokenizer.py ======================================
 # Converts raw text into a list of tokens.
 # Exposes API for tokenization.
 # When run directly, receives program filename from commandline and prints its tokenization.
@@ -6,6 +6,10 @@
 import sys
 from typing import *
 from enum import Enum
+
+# =========================================================
+#      Token kind and operation enums
+# =========================================================
 
 class TokenKind(Enum):
     # Simple tokens:
@@ -30,6 +34,10 @@ class Op(Enum):
     LPAREN   = 5  # (
     RPAREN   = 6  # )
 
+
+# =========================================================
+#      Token classes
+# =========================================================
 
 class Token:
     def __init__(self, kind : TokenKind):
@@ -72,6 +80,10 @@ class BoolTok(Token):
     __str__ = lambda self: f"Bool[{self.val}]"
 
 
+# =========================================================
+#      Tokenizer class
+# =========================================================
+
 class Tokenizer:
     _reserved_words = {
         'skip'  : TokenKind.SKIP,
@@ -104,19 +116,19 @@ class Tokenizer:
             self._skip_whitespace()
         if self._eof():
             tok = Token(TokenKind.EOF)
-        elif self._cur() == 'L':
+        elif self._cur() == 'L':  # label (e.g. "L13")
             self._next_char()
             ind = self._next_lit_numeric()
             tok = LabelTok(ind)
-        elif self._cur() == '?':
+        elif self._cur() == '?':  # arbitrary value (input)
             self._next_char()
             tok = Token(TokenKind.INPUT)
-        elif self._cur().isalpha():
+        elif self._cur().isalpha():  # a variable name or a reserved word
             tok = self._next_alpha()
-        elif self._cur().isdigit():
+        elif self._cur().isdigit():  # an integer
             val = self._next_lit_numeric()
             tok = IntTok(val)
-        else:
+        else:  # an operator
             op = self._next_operator()
             tok = OpTok(op)
         self._tokens.append(tok)
@@ -184,6 +196,9 @@ class Tokenizer:
         return self._tokens
         
 
+# =========================================================
+#      Print program tokenization
+# =========================================================
 
 def _print_tokens(tokens):
     newline = False
