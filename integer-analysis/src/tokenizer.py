@@ -8,25 +8,27 @@ from typing import *
 from enum import Enum
 
 class TokenKind(Enum):
-    EOF             = 0
-    SKIP            = 1
-    ASSUME          = 2
-    ASSERT          = 3
-    ARBITRARY_VALUE = 4
-    BOOL            = 5
-    LABEL           = 6
-    VARIABLE        = 7
-    INTEGER         = 8
-    OPERATOR        = 9
+    # Simple tokens:
+    EOF      = 0
+    SKIP     = 1
+    ASSUME   = 2
+    ASSERT   = 3
+    INPUT    = 4
+    # Tokens with stored data:
+    BOOL     = 5
+    LABEL    = 6
+    VARIABLE = 7
+    INTEGER  = 8
+    OPERATOR = 9
 
 class Op(Enum):
-    ASSIGN          = 0  # :=
-    PLUS            = 1  # +
-    MINUS           = 2  # -
-    EQUAL           = 3  # =
-    NEQUAL          = 4  # !=
-    LPAREN          = 5  # (
-    RPAREN          = 6  # )
+    ASSIGN   = 0  # :=
+    PLUS     = 1  # +
+    MINUS    = 2  # -
+    EQUAL    = 3  # =
+    NEQUAL   = 4  # !=
+    LPAREN   = 5  # (
+    RPAREN   = 6  # )
 
 
 class Token:
@@ -61,7 +63,7 @@ class OpTok(Token):
     def __init__(self, op : Op):
         Token.__init__(self, TokenKind.OPERATOR)
         self.op : Op = op
-    __str__ = lambda self: f"Op[{self.op}]"
+    __str__ = lambda self: f"Op[{self.op._name_}]"
 
 class BoolTok(Token):
     def __init__(self, val : bool):
@@ -71,12 +73,23 @@ class BoolTok(Token):
 
 
 class Tokenizer:
-    _reserved_words = [
-        'skip', 'assume', 'assert', 'TRUE', 'FALSE',
-    ]
-    _operators = [
-        ':=', '+', '-', '=', '!=', '(', ')',
-    ]
+    _reserved_words = {
+        'skip'  : TokenKind.SKIP,
+        'assume': TokenKind.ASSUME,
+        'assert': TokenKind.ASSERT,
+        'TRUE'  : True,
+        'FALSE' : False,
+    }
+
+    _operators = {
+        ':=': Op.ASSIGN,
+        '+' : Op.PLUS,
+        '-' : Op.MINUS,
+        '=' : Op.EQUAL,
+        '!=': Op.NEQUAL,
+        '(' : Op.LPAREN,
+        ')' : Op.RPAREN,
+    }
 
     def __init__(self, text : str):
         self.text : str = text
@@ -97,14 +110,13 @@ class Tokenizer:
             tok = LabelTok(ind)
         elif self._cur() == '?':
             self._next_char()
-            tok = Token(TokenKind.ARBITRARY_VALUE)
+            tok = Token(TokenKind.INPUT)
         elif self._cur().isalpha():
             tok = self._next_alpha()
         elif self._cur().isdigit():
             val = self._next_lit_numeric()
             tok = IntTok(val)
         else:
-            print(self._pos)
             op = self._next_operator()
             tok = OpTok(op)
         self._tokens.append(tok)
@@ -112,11 +124,11 @@ class Tokenizer:
 
     def _next_alpha(self) -> Token:
         identifer = self._next_lit_string()
-        if identifer == "skip": return Token(TokenKind.SKIP)
-        if identifer == "assume": return Token(TokenKind.ASSUME)
-        if identifer == "assert": return Token(TokenKind.ASSERT)
-        if identifer == "TRUE": return BoolTok(True)
-        if identifer == "FALSE": return BoolTok(False)
+        if self._is_reserved_word(identifer):
+            val = Tokenizer._reserved_words[identifer]
+            if identifer == "TRUE" or identifer == "FALSE":
+                return BoolTok(val)
+            return Token(val)
         return VarTok(identifer)
 
     def _next_lit_numeric(self) -> int:
@@ -133,11 +145,11 @@ class Tokenizer:
         j = self._pos
         return self.text[i:j]
 
-    def _next_operator(self) -> str:
+    def _next_operator(self) -> Op:
         for op in Tokenizer._operators:
             if self.text[self._pos:].startswith(op):
                 self._pos += len(op)
-                return op
+                return Tokenizer._operators[op]
 
 
     def _skip_whitespace(self) -> None:
@@ -173,13 +185,24 @@ class Tokenizer:
         
 
 
+def _print_tokens(tokens):
+    newline = False
+    for tok in tokens:
+        if tok.kind is TokenKind.LABEL:
+            newline = not newline
+            if newline: print()
+        print(tok, end=" ")
+    print()
+    print()
+
 def _main():
     fname = sys.argv[1]
     with open(fname, 'r') as f:
         text = f.read()
-    tokenizer = Tokenizer(text)
-    # print(tokenizer.next_token())
-    print(tokenizer.tokens)
+    tokens = Tokenizer(text).tokens
+    _print_tokens(tokens)
+
 
 if __name__ == "__main__":
     _main()
+
