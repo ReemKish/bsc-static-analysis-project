@@ -19,7 +19,7 @@ class TokenKind(Enum):
     ASSERT   = 3
     INPUT    = 4
     # Tokens with stored data:
-    BOOL     = 5
+    BOOLEAN  = 5
     LABEL    = 6
     VARIABLE = 7
     INTEGER  = 8
@@ -75,7 +75,7 @@ class OpTok(Token):
 
 class BoolTok(Token):
     def __init__(self, val : bool):
-        Token.__init__(self, TokenKind.OPERATOR)
+        Token.__init__(self, TokenKind.BOOLEAN)
         self.val : bool = val
     __str__ = lambda self: f"Bool[{self.val}]"
 
@@ -188,7 +188,7 @@ class Tokenizer:
         return w in Tokenizer._reserved_words
 
     @property
-    def tokens(self):
+    def tokens(self) -> List[Token]:
         if self._eof():
             return self._tokens
         while not self._eof():
@@ -207,8 +207,7 @@ def _print_tokens(tokens):
             newline = not newline
             if newline: print()
         print(tok, end=" ")
-    print()
-    print()
+    print("\n")
 
 def _main():
     fname = sys.argv[1]
