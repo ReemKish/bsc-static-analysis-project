@@ -16,13 +16,15 @@ class TokenKind(Enum):
     SKIP     = 1
     ASSUME   = 2
     ASSERT   = 3
-    INPUT    = 4
+    UNKNOWN    = 4
     # Tokens with stored data:
     BOOLEAN  = 5
     LABEL    = 6
     VARIABLE = 7
     INTEGER  = 8
     OPERATOR = 9
+    TRUE = 10
+    FALSE = 11
 
 class Op(Enum):
     ASSIGN   = 0  # :=
@@ -77,14 +79,6 @@ class OpTok(Token):
         self.op : Op = op
     __str__ = lambda self: f"Op[{self.op._name_}]"
 
-# ----- Boolean Token ------------
-class BoolTok(Token):
-    def __init__(self, val : bool):
-        Token.__init__(self, TokenKind.BOOLEAN)
-        self.val : bool = val
-    __str__ = lambda self: f"Bool[{self.val}]"
-
-
 # =========================================================
 #      Tokenizer class
 # =========================================================
@@ -94,8 +88,8 @@ class Tokenizer:
         'skip'  : TokenKind.SKIP,
         'assume': TokenKind.ASSUME,
         'assert': TokenKind.ASSERT,
-        'TRUE'  : True,
-        'FALSE' : False,
+        'TRUE'  : TokenKind.TRUE,
+        'FALSE' : TokenKind.FALSE,
     }
 
     _operators = {
@@ -105,7 +99,7 @@ class Tokenizer:
         '=' : Op.EQUAL,
         '!=': Op.NEQUAL,
         '(' : Op.LPAREN,
-        ')' : Op.RPAREN,
+        ')' : Op.RPAREN
     }
 
     def __init__(self, text : str):
@@ -127,7 +121,7 @@ class Tokenizer:
             tok = LabelTok(ind)
         elif self._cur() == '?':  # arbitrary value (input)
             self._next_char()
-            tok = Token(TokenKind.INPUT)
+            tok = Token(TokenKind.UNKNOWN)
         elif self._cur().isalpha():  # a variable name or a reserved word
             tok = self._next_alpha()
         elif self._cur().isdigit():  # an integer
@@ -139,12 +133,13 @@ class Tokenizer:
         self._tokens.append(tok)
         return tok
 
+    def cur_token(self) -> Token:
+        return self._tokens[-1]
+
     def _next_alpha(self) -> Token:
         identifer = self._next_lit_string()
         if self._is_reserved_word(identifer):
             val = Tokenizer._reserved_words[identifer]
-            if identifer == "TRUE" or identifer == "FALSE":
-                return BoolTok(val)
             return Token(val)
         return VarTok(identifer)
 
