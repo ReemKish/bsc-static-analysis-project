@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
+
+from typing import List
+
+
 class SyntaxNode(object):
     """base class for all syntax-tree nodes"""
-    def __init__(self, table_name):
-        self.table_name = table_name
-
-    def __iter__(self):
-        attributes = [a for a in dir(self) if not a.startswith('__') and not callable(getattr(self,a))]
+    def _attributes(self):
+        attributes = (a for a in dir(self) if not a.startswith('__') and not callable(getattr(self,a)))
         for attr in attributes:
             yield attr, getattr(self, attr)
 
-    def __str__(self):
-        res = ""
-        for (attr, value) in self:
-            res += f"{attr}: {value}\n"
-        return res
+    def __repr__(self):
+        attrs = ", ".join(f"{n}: {v}" for n, v in self._attributes())
+        return  f"{self.__class__.__name__} {{{attrs}}}"
 
 class Var(SyntaxNode):
     def __init__(self, name: str, id: int):
@@ -53,12 +52,17 @@ class VarConsNeq(BaseVarConsComp):
     pass
 
 class AndChain(SyntaxNode):
-    def __init__(self, bool_expr_list: list[BoolExpr]):
+    def __init__(self, bool_expr_list: List[BoolExpr]):
         self.bool_expr_list = bool_expr_list
 
 class OrChain(SyntaxNode):
-    def __init__(self, andc_list: list[AndChain]):
+    def __init__(self, andc_list: List[AndChain]):
         self.andc_list = andc_list
+
+    def __str__(self):
+        return (  self.__class__.__name__ + "\n\t"
+                + "\n\t".join(map(repr,self.andc_list))
+               )
 
 class Command(SyntaxNode):
     pass
@@ -68,11 +72,11 @@ class Skip(Command):
 
 class Assume(Command):
     def __init__(self, expr: BoolExpr):
-        this.expr = expr
+        self.expr = expr
 
 class Assert(Command):
     def __init__(self, orc: OrChain):
-        this.orc = orc
+        self.orc = orc
 
 class Assignment(Command):
     def __init__(self, dest , src):

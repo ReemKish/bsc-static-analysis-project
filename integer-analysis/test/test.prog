@@ -1,0 +1,14 @@
+n i j
+
+L0  n := ?          L1
+L1  i := 0          L2
+L2  j := 0          L3
+L3  assume(i = n)   L6
+L3  assume(i != n)  L4
+L4  i := j + 1      L5
+L5  j := i          L3
+L6  skip            L7
+L7  assume i=5      L2
+L7  assume i!=5     L8
+L8  assert (i!=j TRUE FALSE) (i!=5 i=j) L9
+L9  i := j - 1      L10
