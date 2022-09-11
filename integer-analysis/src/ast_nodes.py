@@ -28,6 +28,15 @@ class ExprFalse(BoolExpr):
 class ExprTrue(BoolExpr):
     pass
 
+class BaseVarTest(BoolExpr):
+    def __init__(self, var: Var):
+        self.var = var
+
+class TestEven(BaseVarTest):
+    pass
+
+class TestOdd(BaseVarTest):
+    pass
 
 class BaseVarComp(BoolExpr):
     def __init__(self, var1: Var, var2: Var):

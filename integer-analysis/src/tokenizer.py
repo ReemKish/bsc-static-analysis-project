@@ -25,6 +25,12 @@ class TokenKind(Enum):
     OPERATOR = 9
     TRUE = 10
     FALSE = 11
+    EVEN = 12
+    ODD = 13
+
+    COMMAND_KEYWORDS = {SKIP, ASSUME, ASSERT}
+    EXPR_KEYWORDS = {TRUE, FALSE, EVEN, ODD}
+    KEYWORDS = COMMAND_KEYWORDS | EXPR_KEYWORDS
 
 class Op(Enum):
     ASSIGN   = 0  # :=
@@ -90,6 +96,8 @@ class Tokenizer:
         'assert': TokenKind.ASSERT,
         'TRUE'  : TokenKind.TRUE,
         'FALSE' : TokenKind.FALSE,
+        'ODD' : TokenKind.ODD,
+        'EVEN': TokenKind.EVEN
     }
 
     _operators = {

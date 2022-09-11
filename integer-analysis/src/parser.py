@@ -164,12 +164,15 @@ class Parser:
 
     def _parse_bool_expr(self) -> ASTS.BoolExpr:
         kind = self._tkind()
-        if kind == TokenKind.TRUE:
+        if kind in {TokenKind.TRUE, TokenKind.FALSE}:
             self._next_token()
-            return ASTS.ExprTrue
-        elif kind == TokenKind.FALSE:
-            self._next_token()
-            return ASTS.ExprFalse
+            if kind == TokenKind.TRUE:
+                return ASTS.ExprTrue
+            elif kind == TokenKind.FALSE:
+                return ASTS.ExprFalse
+        elif kind in {TokenKind.EVEN, TokenKind.ODD}:
+            return self._parse_parity_bexpr()
+
         var1 = self._parse_var()
         assert self._tkind() == TokenKind.OPERATOR
         op = self._token.op
@@ -189,6 +192,15 @@ class Parser:
             else:
                 return ASTS.VarNeq(var1, var2)
 
+    def _parse_parity_bexpr(self):
+        kind = self._tkind()
+        assert kind in {TokenKind.EVEN, TokenKind.ODD}
+        self._next_token()
+        var = self._parse_var()
+        if kind == TokenKind.EVEN:
+            return ASTS.TestEven(var)
+        elif kind == TokenKind.ODD:
+            return ASTS.TestOdd(var)
 
     @_with_trailing_advance
     def _parse_integer(self) -> int:
