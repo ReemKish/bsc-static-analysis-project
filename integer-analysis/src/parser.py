@@ -2,7 +2,8 @@
 import tokenizer
 from tokenizer import TokenKind, Op
 import ast_nodes as ASTS
-from typing import Dict, Optional, Union #, Literal
+from typing import Dict, Optional, Union, Iterable #, Literal
+import networkx as nx
 
 
 MAX_CHAIN_LEN = 10
@@ -35,9 +36,13 @@ class Parser:
         self._text = text
         self._tokenizer = tokenizer.Tokenizer(text)
         self._token = None
-        self._var_id_map = varname_to_id_map
-
         self._next_token()
+
+        if varname_to_id_map is not None:
+            self._var_id_map = varname_to_id_map
+        else:
+            self._var_id_map = self._parse_var_list()
+
 
     def _tkind(self):
         return self._token.kind
@@ -45,18 +50,23 @@ class Parser:
     def _next_token(self):
         self._token = self._tokenizer.next_token()
 
-    def parse_var_list(self) -> None:
-        assert self._var_id_map == None, "Var name to id map already initialized"
-        self._var_id_map = {}
+    def _parse_var_list(self) -> Dict[str, int]:
+        ret = {}
         i = 0
         while self._tkind() == TokenKind.VARIABLE:
-            self._var_id_map[self._token.name]=i
+            ret[self._token.name]=i
             i+=1
             self._next_token()
+        return ret
 
-    def parse_labeled_command(self) -> Union[ASTS.SyntaxNode, type(EOF)]:
-        """Parse a single command and return syntax-tree-node.
-        If no command (EOF) return EOF."""
+    def parse_labeled_command(self) -> Union[LabeledCommand, type(EOF)]:
+        """
+        Parse a single command and return a LabeledCommand object,
+        containing the command labels and its AST.
+        If no command (EOF) return EOF.
+        """
+        assert self._var_id_map is not None, "Parser variables not initialized"
+
         if self._tkind() == TokenKind.EOF:
             return EOF
         start_label = self._parse_label()
@@ -64,7 +74,18 @@ class Parser:
         end_label = self._parse_label()
         return LabeledCommand(command_ast, start_label, end_label)
 
-    def _parse_command(self):
+    def parse_labeled_commands_iter(self) -> Iterable[LabeledCommand]:
+        while True:
+            c = self.parse_labeled_command()
+            if c == EOF:
+                return
+            yield c
+
+    def parse_complete_program(self) -> nx.DiGraph:
+        return nx.DiGraph(list((*c.labels, {"ast": c.ast})
+                          for c in self.parse_labeled_commands_iter()))
+
+    def _parse_command(self) -> Union[ASTS.SyntaxNode, type(EOF)]:
         kind = self._tkind()
         if kind == TokenKind.SKIP:
             return self._parse_skip()
@@ -217,18 +238,17 @@ class Parser:
 
 def _main():
     from sys import argv
+    import matplotlib.pyplot as plt
     fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
     p = Parser(text)
-    p.parse_var_list()
-    i=1
-    while True:
-        c = p.parse_labeled_command()
+    for i, c in enumerate(p.parse_labeled_commands_iter()):
         print(f"{i}. {c}")
-        i+=1
-        if c==EOF:
-            break
 
+    p = Parser(text)
+    g = p.parse_complete_program()
+    nx.draw(g, with_labels = True)
+    plt.show()
 if __name__ == "__main__":
     _main()
