@@ -50,7 +50,7 @@ class Token:
         self.kind = kind
 
     def __str__(self):
-        return f"{self.kind._name_}"
+        return f"{self.kind._name_.title()}"
     
     def __repr__(self):
         return str(self)
