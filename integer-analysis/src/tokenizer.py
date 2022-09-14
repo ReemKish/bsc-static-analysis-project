@@ -17,16 +17,14 @@ class TokenKind(Enum):
     ASSUME   = 2
     ASSERT   = 3
     UNKNOWN    = 4
-    # Tokens with stored data:
-    BOOLEAN  = 5
-    LABEL    = 6
-    VARIABLE = 7
-    INTEGER  = 8
-    OPERATOR = 9
-    TRUE = 10
-    FALSE = 11
-    EVEN = 12
-    ODD = 13
+    LABEL    = 5
+    VARIABLE = 6
+    INTEGER  = 7
+    OPERATOR = 8
+    TRUE = 9
+    FALSE = 10
+    EVEN = 11
+    ODD = 12
 
     COMMAND_KEYWORDS = {SKIP, ASSUME, ASSERT}
     EXPR_KEYWORDS = {TRUE, FALSE, EVEN, ODD}
