@@ -43,7 +43,7 @@ class BaseComp(BoolExpr):
         self.lhs = lhs
         self.rhs = rhs
 
-class BaseVarComp(BoolExpr):
+class BaseVarComp(BaseComp):
     def __init__(self, lhs: Var, rhs: Var):
         BaseComp.__init__(self, lhs,rhs)
 
