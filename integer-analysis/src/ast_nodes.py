@@ -108,8 +108,9 @@ class ConstAssignment(Assignment):
         Assignment.__init__(self, dest, src)
 
 class UnknownAssigment(Assignment):
-    def __init__(self, dest: Var):
-        Assignment.__init__(self, dest, None)
+    def __init__(self, dest: Var, src: int):
+        # src is an identifier for the specific unknown in this case
+        Assignment.__init__(self, dest, src)
 
 class BaseVarAssignment(Assignment):
     def __init__(self, dest: Var, src: Var):

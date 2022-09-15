@@ -37,12 +37,19 @@ class Parser:
         self._tokenizer = tokenizer.Tokenizer(text)
         self._token = None
         self._next_token()
+        self._unknown_id = 0
 
         if varname_to_id_map is not None:
             self._var_id_map = varname_to_id_map
         else:
             self._var_id_map = self._parse_var_dec()
 
+
+    def _get_unknown_id(self) -> int:
+        return self._unknown_id
+
+    def _inc_unknown_id(self) -> None:
+        self._unknown_id += 1
 
     def _tkind(self):
         return self._token.kind
@@ -102,12 +109,14 @@ class Parser:
     def _parse_assignment(self) -> ASTS.Assignment:
         assert self._tkind() == TokenKind.VARIABLE
         dest = self._parse_var()
-        assert self._token.op == Op.ASSIGN
+        assert self._token.op == Op.ASSIGN, (f"Expected assignment operator, found {self._token} instead")
         self._next_token()
         kind = self._tkind()
         if kind == TokenKind.UNKNOWN:
             self._next_token()
-            return ASTS.UnknownAssigment(dest)
+            i = self._get_unknown_id()
+            self._inc_unknown_id()
+            return ASTS.UnknownAssigment(dest , i)
         elif kind == TokenKind.INTEGER:
             return ASTS.ConstAssignment(dest, self._parse_integer())
         elif kind == TokenKind.VARIABLE:
