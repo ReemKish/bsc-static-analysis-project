@@ -25,6 +25,7 @@ class TokenKind(Enum):
     FALSE = 10
     EVEN = 11
     ODD = 12
+    SUM = 13
 
     COMMAND_KEYWORDS = {SKIP, ASSUME, ASSERT}
     EXPR_KEYWORDS = {TRUE, FALSE, EVEN, ODD}
@@ -95,7 +96,8 @@ class Tokenizer:
         'TRUE'  : TokenKind.TRUE,
         'FALSE' : TokenKind.FALSE,
         'ODD' : TokenKind.ODD,
-        'EVEN': TokenKind.EVEN
+        'EVEN': TokenKind.EVEN,
+        'SUM': TokenKind.SUM,
     }
 
     _operators = {
