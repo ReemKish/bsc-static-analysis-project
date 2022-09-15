@@ -19,61 +19,128 @@ class Var(SyntaxNode):
         self.name = name
         self.id = id
 
-class BoolExpr(SyntaxNode):
-    pass
 
-class ExprFalse(BoolExpr):
-    pass
+# ===============================================
+#      BoolExpr
+# ===============================================
 
-class ExprTrue(BoolExpr):
-    pass
+class BoolExpr(SyntaxNode): pass
 
+class ExprFalse(BoolExpr): pass
+
+class ExprTrue(BoolExpr): pass
+
+
+# BaseVarTest
+# ---------------------------
 class BaseVarTest(BoolExpr):
     def __init__(self, var: Var):
         self.var = var
 
-class TestEven(BaseVarTest):
-    pass
+class TestEven(BaseVarTest): pass
 
-class TestOdd(BaseVarTest):
-    pass
+class TestOdd(BaseVarTest): pass
 
+
+# BaseComp
+# ---------------------------
 class BaseComp(BoolExpr):
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
 
+# BaseVarComp
 class BaseVarComp(BaseComp):
     def __init__(self, lhs: Var, rhs: Var):
         BaseComp.__init__(self, lhs,rhs)
+class VarEq(BaseVarComp): pass
+class VarNeq(BaseVarComp): pass
 
-class VarEq(BaseVarComp):
-    pass
-
-class VarNeq(BaseVarComp):
-    pass
-
+# BaseVarConsComp
 class BaseVarConsComp(BaseComp):
     def __init__(self, lhs: Var, rhs: int):
         BaseComp.__init__(self, lhs,rhs)
+class VarConsEq(BaseVarConsComp): pass
+class VarConsNeq(BaseVarConsComp): pass
 
-class VarConsEq(BaseVarConsComp):
-    pass
+# SumEq
+class SumEq(BaseComp):
+    def __init__(self, lhs: SumExpr, rhs: SumExpr):
+        BaseComp.__init__(self, lhs,rhs)
 
-class VarConsNeq(BaseVarConsComp):
-    pass
+# ===============================================
+#      Command
+# ===============================================
+
+class Command(SyntaxNode): pass
+
+# Skip
+# ---------------------------
+class Skip(Command): pass
+
+# Assume
+# ---------------------------
+class Assume(Command):
+    def __init__(self, expr: BoolExpr):
+        self.expr = expr
+
+# Assert
+# ---------------------------
+class Assert(Command):
+    def __init__(self, orc: OrChain):
+        self.orc = orc
+
+# Assignment
+# ---------------------------
+class Assignment(Command):
+    def __init__(self, dest , src):
+        self.dest = dest
+        self.src = src
+
+# ConstAssignment 
+class ConstAssignment(Assignment):
+    def __init__(self, dest: Var, src: int):
+        Assignment.__init__(self, dest, src)
+
+# UnknownAssignment 
+class UnknownAssigment(Assignment):
+    def __init__(self, dest: Var, src: int):
+        # src is an identifier for the specific unknown in this case
+        Assignment.__init__(self, dest, src)
+
+# BaseVarAssignment 
+class BaseVarAssignment(Assignment):
+    def __init__(self, dest: Var, src: Var):
+        Assignment.__init__(self, dest, src)
+class VarAssignment(BaseVarAssignment): pass
+class DecAssignment(BaseVarAssignment): pass
+class IncAsssignment(BaseVarAssignment): pass
+
+
+
+# ===============================================
+#      SumExpr
+# ===============================================
 
 class SumExpr(SyntaxNode):
     def __init__(self, var_list: List[Var]):
         self.var_list = var_list
 
-class SumEq(BaseComp):
-    def __init__(self, lhs: SumExpr, rhs: SumExpr):
-        BaseComp.__init__(self, lhs,rhs)
+
+
+# ===============================================
+#      AndChain
+# ===============================================
 
 class AndChain(SyntaxNode):
     def __init__(self, bool_expr_list: List[BoolExpr]):
         self.bool_expr_list = bool_expr_list
+
+
+
+# ===============================================
+#      OrChain
+# ===============================================
 
 class OrChain(SyntaxNode):
     def __init__(self, andc_list: List[AndChain]):
@@ -83,45 +150,4 @@ class OrChain(SyntaxNode):
         return (  self.__class__.__name__ + "\n\t"
                 + "\n\t".join(map(repr,self.andc_list))
                )
-
-class Command(SyntaxNode):
-    pass
-
-class Skip(Command):
-    pass
-
-class Assume(Command):
-    def __init__(self, expr: BoolExpr):
-        self.expr = expr
-
-class Assert(Command):
-    def __init__(self, orc: OrChain):
-        self.orc = orc
-
-class Assignment(Command):
-    def __init__(self, dest , src):
-        self.dest = dest
-        self.src = src
-
-class ConstAssignment(Assignment):
-    def __init__(self, dest: Var, src: int):
-        Assignment.__init__(self, dest, src)
-
-class UnknownAssigment(Assignment):
-    def __init__(self, dest: Var, src: int):
-        # src is an identifier for the specific unknown in this case
-        Assignment.__init__(self, dest, src)
-
-class BaseVarAssignment(Assignment):
-    def __init__(self, dest: Var, src: Var):
-        Assignment.__init__(self, dest, src)
-
-class VarAssignment(BaseVarAssignment):
-    pass
-
-class DecAssignment(BaseVarAssignment):
-    pass
-
-class IncAsssignment(BaseVarAssignment):
-    pass
 
