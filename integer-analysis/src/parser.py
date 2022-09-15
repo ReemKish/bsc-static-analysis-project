@@ -59,7 +59,7 @@ class Parser:
             self._next_token()
         return ret
 
-    def parse_labeled_command(self) -> Union[LabeledCommand, type(EOF)]:
+    def parse_labeled_command(self) -> Union[LabeledCommand, type[EOF]]:
         """
         Parse a single command and return a LabeledCommand object,
         containing the command labels and its AST.
@@ -85,7 +85,7 @@ class Parser:
         return nx.DiGraph(list((*c.labels, {"ast": c.ast})
                           for c in self.parse_labeled_commands_iter()))
 
-    def _parse_command(self) -> Union[ASTS.SyntaxNode, type(EOF)]:
+    def _parse_command(self) -> Union[ASTS.SyntaxNode, type[EOF]]:
         kind = self._tkind()
         if kind == TokenKind.SKIP:
             return self._parse_skip()
