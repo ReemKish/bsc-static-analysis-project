@@ -38,10 +38,14 @@ class TestEven(BaseVarTest):
 class TestOdd(BaseVarTest):
     pass
 
+class BaseComp(BoolExpr):
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+
 class BaseVarComp(BoolExpr):
-    def __init__(self, var1: Var, var2: Var):
-        self.var1 = var1
-        self.var2 = var2
+    def __init__(self, lhs: Var, rhs: Var):
+        BaseComp.__init__(self, lhs,rhs)
 
 class VarEq(BaseVarComp):
     pass
@@ -49,16 +53,23 @@ class VarEq(BaseVarComp):
 class VarNeq(BaseVarComp):
     pass
 
-class BaseVarConsComp(BoolExpr):
-    def __init__(self, var: Var, cons: int):
-        self.var = var
-        self.cons = cons
+class BaseVarConsComp(BaseComp):
+    def __init__(self, lhs: Var, rhs: int):
+        BaseComp.__init__(self, lhs,rhs)
 
 class VarConsEq(BaseVarConsComp):
     pass
 
 class VarConsNeq(BaseVarConsComp):
     pass
+
+class SumExpr(SyntaxNode):
+    def __init__(self, var_list: List[Var]):
+        self.var_list = var_list
+
+class SumEq(BaseComp):
+    def __init__(self, lhs: SumExpr, rhs: SumExpr):
+        BaseComp.__init__(self, lhs,rhs)
 
 class AndChain(SyntaxNode):
     def __init__(self, bool_expr_list: List[BoolExpr]):

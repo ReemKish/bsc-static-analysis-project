@@ -13,3 +13,5 @@ L7  assume i!=5     L8
 L8  assert (i!=j TRUE FALSE) (i!=5 i=j) L9
 L9  i := j - 1      L10
 L10 assert (ODD i EVEN j) (EVEN n) L11
+L11 assert (SUM i j = SUM j n) L12
+L12 skip L13

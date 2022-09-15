@@ -2,7 +2,7 @@
 import tokenizer
 from tokenizer import TokenKind, Op
 import ast_nodes as ASTS
-from typing import Dict, Optional, Union, Iterable #, Literal
+from typing import Dict, Optional, Union, Iterable, List #, Literal
 import networkx as nx
 
 
@@ -41,7 +41,7 @@ class Parser:
         if varname_to_id_map is not None:
             self._var_id_map = varname_to_id_map
         else:
-            self._var_id_map = self._parse_var_list()
+            self._var_id_map = self._parse_var_dec()
 
 
     def _tkind(self):
@@ -50,7 +50,7 @@ class Parser:
     def _next_token(self):
         self._token = self._tokenizer.next_token()
 
-    def _parse_var_list(self) -> Dict[str, int]:
+    def _parse_var_dec(self) -> Dict[str, int]:
         ret = {}
         i = 0
         while self._tkind() == TokenKind.VARIABLE:
@@ -119,12 +119,10 @@ class Parser:
                 num = self._parse_integer()
                 assert (num == 1)
                 if op == Op.PLUS:
-                    print(f"token: {self._token}")
                     return ASTS.IncAsssignment(dest, src)
                 elif op == Op.MINUS:
                     return ASTS.DecAssignment(dest, src)
             else:
-                print(f"token: {self._token}")
                 return ASTS.VarAssignment(dest, src)
 
 
@@ -193,13 +191,15 @@ class Parser:
                 return ASTS.ExprFalse
         elif kind in {TokenKind.EVEN, TokenKind.ODD}:
             return self._parse_parity_bexpr()
+        elif kind == TokenKind.SUM:
+            return self._parse_sum_comp()
 
         var1 = self._parse_var()
-        assert self._tkind() == TokenKind.OPERATOR
-        op = self._token.op
+
+        op = self._next_op()
         assert op in (Op.EQUAL, Op.NEQUAL)
         is_eq = (op == Op.EQUAL)
-        self._next_token()
+
         if self._tkind() == TokenKind.INTEGER:
             cons = self._parse_integer()
             if is_eq:
@@ -213,7 +213,12 @@ class Parser:
             else:
                 return ASTS.VarNeq(var1, var2)
 
-    def _parse_parity_bexpr(self):
+    @_with_trailing_advance
+    def _next_op(self) -> Op:
+        assert self._tkind() == TokenKind.OPERATOR
+        return self._token.op
+
+    def _parse_parity_bexpr(self) -> ASTS.BaseVarTest:
         kind = self._tkind()
         assert kind in {TokenKind.EVEN, TokenKind.ODD}
         self._next_token()
@@ -222,6 +227,26 @@ class Parser:
             return ASTS.TestEven(var)
         elif kind == TokenKind.ODD:
             return ASTS.TestOdd(var)
+
+    def _parse_sum_comp(self) -> ASTS.SumEq:
+        sum1 = self._parse_sum_expr()
+        op = self._next_op()
+        assert op==Op.EQUAL
+        sum2 = self._parse_sum_expr()
+        return ASTS.SumEq(sum1, sum2)
+
+    def _parse_sum_expr(self) -> ASTS.SumExpr:
+        assert self._tkind() == TokenKind.SUM
+        self._next_token()
+        assert self._tkind() == TokenKind.VARIABLE, \
+                "SUM expression must contain at least one variable"
+        return ASTS.SumExpr(self._parse_var_list())
+
+    def _parse_var_list(self) -> List[ASTS.Var]:
+        ret = []
+        while (self._tkind() == TokenKind.VARIABLE):
+            ret.append(self._parse_var())
+        return ret
 
     @_with_trailing_advance
     def _parse_integer(self) -> int:
