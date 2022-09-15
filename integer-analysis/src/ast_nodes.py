@@ -14,6 +14,9 @@ class SyntaxNode(object):
         attrs = ", ".join(f"{n}: {v}" for n, v in self._attributes())
         return  f"{self.__class__.__name__} {{{attrs}}}"
 
+# ===============================================
+#      Var
+# ===============================================
 class Var(SyntaxNode):
     def __init__(self, name: str, id: int):
         self.name = name
@@ -21,9 +24,16 @@ class Var(SyntaxNode):
 
 
 # ===============================================
+#      SumExpr
+# ===============================================
+class SumExpr(SyntaxNode):
+    def __init__(self, var_list: List[Var]):
+        self.var_list = var_list
+
+
+# ===============================================
 #      BoolExpr
 # ===============================================
-
 class BoolExpr(SyntaxNode): pass
 
 class ExprFalse(BoolExpr): pass
@@ -68,10 +78,31 @@ class SumEq(BaseComp):
     def __init__(self, lhs: SumExpr, rhs: SumExpr):
         BaseComp.__init__(self, lhs,rhs)
 
+
+# ===============================================
+#      AndChain
+# ===============================================
+class AndChain(SyntaxNode):
+    def __init__(self, bool_expr_list: List[BoolExpr]):
+        self.bool_expr_list = bool_expr_list
+
+
+# ===============================================
+#      OrChain
+# ===============================================
+class OrChain(SyntaxNode):
+    def __init__(self, andc_list: List[AndChain]):
+        self.andc_list = andc_list
+
+    def __str__(self):
+        return (  self.__class__.__name__ + "\n\t"
+                + "\n\t".join(map(repr,self.andc_list))
+               )
+
+
 # ===============================================
 #      Command
 # ===============================================
-
 class Command(SyntaxNode): pass
 
 # Skip
@@ -115,39 +146,3 @@ class BaseVarAssignment(Assignment):
 class VarAssignment(BaseVarAssignment): pass
 class DecAssignment(BaseVarAssignment): pass
 class IncAsssignment(BaseVarAssignment): pass
-
-
-
-# ===============================================
-#      SumExpr
-# ===============================================
-
-class SumExpr(SyntaxNode):
-    def __init__(self, var_list: List[Var]):
-        self.var_list = var_list
-
-
-
-# ===============================================
-#      AndChain
-# ===============================================
-
-class AndChain(SyntaxNode):
-    def __init__(self, bool_expr_list: List[BoolExpr]):
-        self.bool_expr_list = bool_expr_list
-
-
-
-# ===============================================
-#      OrChain
-# ===============================================
-
-class OrChain(SyntaxNode):
-    def __init__(self, andc_list: List[AndChain]):
-        self.andc_list = andc_list
-
-    def __str__(self):
-        return (  self.__class__.__name__ + "\n\t"
-                + "\n\t".join(map(repr,self.andc_list))
-               )
-
