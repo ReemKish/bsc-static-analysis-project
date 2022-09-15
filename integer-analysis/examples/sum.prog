@@ -1,0 +1,27 @@
+i j l
+i := ?
+j := ?
+k := 0
+assert(SUM i j k = SUM j k)
+
+if(i == 1)
+  j = i
+
+
+---------------------------------------------------------
+
+class V:
+  def __init__(unknowns={}, const=0):
+    self.unknowns = unknowns
+    self.const = const
+
+{i}     | V({0},0)
+{j}     | V({1}, 0)
+{k}     | V({}, 0)
+{i,j}   | V({0,1}, 0)
+{i,k}   | V({0}, 0)
+{j,k}   | V({1}, 0)
+{i,j,k} | V({0,1},0)
+
+
+
