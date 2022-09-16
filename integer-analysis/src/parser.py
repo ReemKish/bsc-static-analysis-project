@@ -128,7 +128,7 @@ class Parser:
                 num = self._parse_integer()
                 assert (num == 1)
                 if op == Op.PLUS:
-                    return ASTS.IncAsssignment(dest, src)
+                    return ASTS.IncAssignment(dest, src)
                 elif op == Op.MINUS:
                     return ASTS.DecAssignment(dest, src)
             else:
