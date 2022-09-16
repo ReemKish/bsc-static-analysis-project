@@ -145,4 +145,4 @@ class BaseVarAssignment(Assignment):
         Assignment.__init__(self, dest, src)
 class VarAssignment(BaseVarAssignment): pass
 class DecAssignment(BaseVarAssignment): pass
-class IncAsssignment(BaseVarAssignment): pass
+class IncAssignment(BaseVarAssignment): pass
