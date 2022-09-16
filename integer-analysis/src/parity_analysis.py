@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from enum import Enum
-impport ast_nodes as ASTS
+import ast_nodes as ASTS
 
 class PState(Enum):
     BOTTOM = 0
