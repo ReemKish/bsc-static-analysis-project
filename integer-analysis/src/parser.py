@@ -181,12 +181,12 @@ class Parser:
     def _parse_andc(self) -> ASTS.AndChain:
         assert self._token.op == Op.LPAREN
         self._next_token()
-        bexpr_l = []
+        pred_l = []
         for _ in range(MAX_CHAIN_LEN):
-            bexpr_l.append(self._parse_bool_expr())
+            pred_l.append(self._parse_predicate())
             if (self._tkind() == TokenKind.OPERATOR and
                 self._token.op == Op.RPAREN):
-                return ASTS.AndChain(bexpr_l)
+                return ASTS.AndChain(pred_l)
         assert False, "Chain too long"
 
 
@@ -198,10 +198,6 @@ class Parser:
                 return ASTS.ExprTrue
             elif kind == TokenKind.FALSE:
                 return ASTS.ExprFalse
-        elif kind in {TokenKind.EVEN, TokenKind.ODD}:
-            return self._parse_parity_bexpr()
-        elif kind == TokenKind.SUM:
-            return self._parse_sum_comp()
 
         var1 = self._parse_var()
 
@@ -226,6 +222,14 @@ class Parser:
     def _next_op(self) -> Op:
         assert self._tkind() == TokenKind.OPERATOR
         return self._token.op
+
+    def _parse_predicate(self) -> ASTS.Predicate:
+        kind = self._tkind()
+        if kind in {TokenKind.EVEN, TokenKind.ODD}:
+            return self._parse_parity_bexpr()
+        elif kind == TokenKind.SUM:
+            return self._parse_sum_comp()
+        assert False, "Exhausted options"
 
     def _parse_parity_bexpr(self) -> ASTS.BaseVarTest:
         kind = self._tkind()

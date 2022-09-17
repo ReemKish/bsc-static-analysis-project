@@ -34,23 +34,15 @@ class SumExpr(SyntaxNode):
 # ===============================================
 #      BoolExpr
 # ===============================================
-class BoolExpr(SyntaxNode): pass
+class BoolExpr(SyntaxNode):
+    """
+    Base class for boolean expressions used in assume statements.
+    """
+    pass
 
 class ExprFalse(BoolExpr): pass
 
 class ExprTrue(BoolExpr): pass
-
-
-# BaseVarTest
-# ---------------------------
-class BaseVarTest(BoolExpr):
-    def __init__(self, var: Var):
-        self.var = var
-
-class TestEven(BaseVarTest): pass
-
-class TestOdd(BaseVarTest): pass
-
 
 # BaseComp
 # ---------------------------
@@ -73,18 +65,38 @@ class BaseVarConsComp(BaseComp):
 class VarConsEq(BaseVarConsComp): pass
 class VarConsNeq(BaseVarConsComp): pass
 
+
+class Predicate(SyntaxNode):
+    """
+    Base class for boolean predicates used in assert statements.
+    """
+
+# BaseVarTest
+# ---------------------------
+
+
+class BaseVarTest(Predicate):
+    def __init__(self, var: Var):
+        self.var = var
+
+class TestEven(BaseVarTest): pass
+
+class TestOdd(BaseVarTest): pass
+
+
 # SumEq
-class SumEq(BaseComp):
+class SumEq(Predicate):
     def __init__(self, lhs: SumExpr, rhs: SumExpr):
-        BaseComp.__init__(self, lhs,rhs)
+        self.lhs = lhs
+        self.rhs = rhs
 
 
 # ===============================================
 #      AndChain
 # ===============================================
 class AndChain(SyntaxNode):
-    def __init__(self, bool_expr_list: List[BoolExpr]):
-        self.bool_expr_list = bool_expr_list
+    def __init__(self, pred_list: List[Predicate]):
+        self.pred_list = pred_list
 
 
 # ===============================================
