@@ -88,9 +88,11 @@ class Parser:
                 return
             yield c
 
-    def parse_complete_program(self) -> nx.DiGraph:
-        return nx.DiGraph(list((*c.labels, {"ast": c.ast})
+    def parse_complete_program(self) -> (nx.DiGraph, int):
+        num_vars = len(self._var_id_map)
+        cfg = nx.DiGraph(list((*c.labels, {"ast": c.ast})
                           for c in self.parse_labeled_commands_iter()))
+        return cfg, num_vars
 
     def _parse_command(self) -> Union[ASTS.SyntaxNode, type(EOF)]:
         kind = self._tkind()
