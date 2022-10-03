@@ -4,6 +4,8 @@ import networkx as nx
 MAX_ITERATIONS = 1024
 
 def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method):
+    from random import shuffle
+
     # TODO: find the in degree 0 label and use it instead of assuming
     # it is always label 0
     assert cfg.in_degree(0) == 0, "label 0 is starting node for now"
@@ -15,10 +17,19 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method):
     X = [ lattice.top() ] + [ lattice.bottom() for _ in range(n-1) ]
 
     # start with (1,...,n) without 0 because 0 is already set to top
-    work_s = set(range(1,n))
+    initial_inds = range(1,n)
+    work_s = set(initial_inds)
 
     num_iter = 0
     while work_s:
+
+        # pop-order randomization
+        #l = list(work_s)
+        #shuffle(l)
+        #i = l.pop()
+        #work_s = set(l)
+
+        # no randomization
         i = work_s.pop()
 
         # In our version we analyze what we know BEFORE each program
@@ -28,6 +39,25 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method):
         prev_inds_asts = ((j, d['ast']) for j,d in rev_cfg[i].items())
         transed = (lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
         N = lattice.join(transed)
+
+        # TODO: consider removing this, making a condition
+        # that all objects returned by the lattice functions must
+        # be immutable. This is present right now because when,
+        # for instance, the lattice.join function returns some kind
+        # of map object, and later it is compared with lattice.equiv
+        # to some other object the comparison may exhaust the iterator
+        # making it erroneous to keep using in later calculation.
+        # So either the lattice element objects must be completely
+        # immutable or all latice functions must not mutate them under
+        # any condition.
+        N = list(N)
+        #if len(N)!=num_vars:
+        #    print('\n'.join(f"X[i] = {X[i]}",
+        #                    f"transed = {transed}",
+        #                    f"N = {N}"
+        #                   )
+        #         )
+
         if not lattice.equiv(N,X[i]):
             X[i] = N
             work_s.update(cfg[i])
@@ -56,6 +86,9 @@ def vanilla_iteration(num_vars: int, cfg: nx.DiGraph, method):
             return X
     assert False, f"Iteration didn't finish in {MAX_ITERATIONS} iterations."
 
+def _print_res(res):
+    print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
+
 def _main():
     from parser import Parser
     from sys import argv
@@ -66,7 +99,18 @@ def _main():
     p = Parser(text)
     g,num_vars = p.parse_complete_program()
     res = chaotic_iteration(num_vars,g,PADumb)
-    print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
+    res = map(list,res)
+    _print_res(res)
+   # X = X_old = res
+   # for _ in range(30):
+   #     X = chaotic_iteration(num_vars,g,PADumb)
+   #     X = list(map(list, X))
+   #     _print_res(X_old)
+   #     print("---------------")
+   #     _print_res(X)
+   #     if not all(PADumb(num_vars).equiv(cur, old) for cur,old in zip(X,X_old)):
+   #         assert False
+   #     X_old = X
 
     #nx.draw(g, with_labels = True)
     #plt.show()

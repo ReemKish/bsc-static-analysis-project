@@ -5,5 +5,5 @@ L1  i := 0          L2
 L2  j := 0          L3
 L3  assume(i = n)   L5
 L3  assume(i != n)  L4
-L4  i := 4          L5
+L4  n := 0          L5
 L5  skip            L6
