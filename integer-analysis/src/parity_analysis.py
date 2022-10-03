@@ -18,15 +18,22 @@ class PState(Enum):
         else:
             return PState.TOP
 
+from functools import reduce
 class PADumb:
     def __init__(self, num_vars):
         self.n = num_vars
     def bottom(self):
-        return [ PState.BOTTOM ] * n
+        return [ PState.BOTTOM ] *self.n
     def top(self):
-        return [ PState.TOP ] * n
-    def join(self, x, y):
-        return map(join, zip(x,y))
+        return [ PState.TOP ] *self.n
+    def join2(self, x, y):
+        return map(PState.join, zip(x,y))
+    def join(self, l):
+        assert len(l)>0
+        if len(l)==1:
+            return l[0]
+        return reduce(self.join2, l)
+
     def equiv(self, x, y):
         return all(a==b for a,b in zip(x,y))
 
