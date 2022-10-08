@@ -40,17 +40,10 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method):
         transed = (lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
         N = lattice.join(transed)
 
-        # TODO: consider removing this, making a condition
-        # that all objects returned by the lattice functions must
-        # be immutable. This is present right now because when,
-        # for instance, the lattice.join function returns some kind
-        # of map object, and later it is compared with lattice.equiv
-        # to some other object the comparison may exhaust the iterator
-        # making it erroneous to keep using in later calculation.
-        # So either the lattice element objects must be completely
-        # immutable or all latice functions must not mutate them under
-        # any condition.
-        N = list(N)
+        # See the stabilize method documention in BaseAnalysis class
+        # for documentation
+        N = lattice.stabilize(N)
+
         #if len(N)!=num_vars:
         #    print('\n'.join(f"X[i] = {X[i]}",
         #                    f"transed = {transed}",

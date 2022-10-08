@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from analysis import BaseAnalysis
 from enum import Enum
 import ast_nodes as ASTS
 
@@ -29,7 +30,7 @@ class PState(Enum):
             return PState.BOTTOM
 
 from functools import reduce
-class PADumb:
+class PADumb(BaseAnalysis):
     def __init__(self, num_vars):
         self.n = num_vars
 
@@ -69,3 +70,7 @@ class PADumb:
                 x[i1] = x[i2] = m
                 return x
         return x
+
+    def stabilize(self, x):
+        return tuple(x)
+
