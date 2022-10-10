@@ -3,6 +3,9 @@
 from analysis import BaseAnalysis
 from enum import Enum
 import ast_nodes as ASTS
+import numpy as np
+import itertools
+
 
 class PState(Enum):
     BOTTOM = 0
@@ -53,7 +56,9 @@ class PADumb(BaseAnalysis):
     def equiv(self, x, y):
         return all(a==b for a,b in zip(x,y))
 
-    def transform(self, ast, x):
+    def transform_nontrivial(self, ast, x):
+        if self.equiv(x,self.bottom()):
+            return x
         x = list(x)
         if isinstance(ast, ASTS.ConstAssignment):
             ret = list(x)
@@ -67,6 +72,8 @@ class PADumb(BaseAnalysis):
                 i1 = v1.id
                 i2 = v2.id
                 m = PState.meet(x[i1], x[i2])
+                if m == PState.BOTTOM:
+                    return self.bottom()
                 x[i1] = x[i2] = m
                 return x
         return x
@@ -74,3 +81,126 @@ class PADumb(BaseAnalysis):
     def stabilize(self, x):
         return tuple(x)
 
+
+
+def _parity_val(num: int):
+    return num%2==0
+
+class PAFull(BaseAnalysis):
+    def __init__(self, num_vars):
+        self.n = num_vars
+        self.BOTTOM = np.array([[] for _ in range(self.n)], dtype=bool)
+        prod = itertools.product((True,False),repeat=self.n)
+        self.TOP = np.transpose(list(prod))
+        self.BOTTOM.setflags(write=False)
+        self.TOP.setflags(write=False)
+        print("---------------------------------")
+        print(self.n)
+        print("---------------------------------")
+        print(self.TOP.shape,"---------------", self.BOTTOM.shape)
+        print("---------------------------------")
+        print(type(self.TOP),"---------------", type(self.BOTTOM))
+        print("---------------------------------")
+
+    def _remove_unique(self, x):
+        return np.unique(x, axis=1)
+
+    def _clean_unique(method):
+        def wrapped(self, *args, **kwargs):
+            ret = method(self, *args, **kwargs)
+            return self._remove_unique(ret)
+
+        return wrapped
+
+    def _copy_if_nonwrite(self,x):
+        if not x.flags.writeable:
+            return x.copy()
+
+    def bottom(self):
+        return self.BOTTOM
+
+    def top(self):
+        return self.TOP
+
+    @_clean_unique
+    def join(self, l):
+        l = list(l)
+        return np.hstack(l)
+
+    def _set_rep(self, x):
+        return { tuple(col) for col in x.transpose() }
+
+    def equiv(self, x, y):
+        print(type(x), type(y))
+        #x,y = map(self._set_rep, (x,y))
+        return self._set_rep(x)==self._set_rep(y)
+
+    def transform_nontrivial(self, ast, x):
+        #x = x.copy()
+        x = self._copy_if_nonwrite(x)
+        match ast:
+            case ASTS.Assignment(dest=dest, src=src):
+                dest = dest.id
+                match ast:
+                    case ASTS.ConstAssignment():
+                        x[dest] = _parity_val(src)
+                    case ASTS.UnknownAssigment():
+                        x[dest] = True
+                        x = np.hstack((x,x))
+                        x[dest, x.shape[1]//2:] = False
+                    case ASTS.VarAssignment():
+                        x[dest] = x[src.id]
+                    case ASTS.StepAssigment():
+                        x[dest] = ~x[src.id]
+            case ASTS.Assume(expr=expr):
+                match expr:
+                    case ASTS.BaseComp(lhs=lhs, rhs=rhs):
+                        i = lhs.id
+                        match expr:
+                            case ASTS.VarNeq() | ASTS.VarConsNeq:
+                                pass
+                            case ASTS.VarEq():
+                                j=rhs.id
+                                return x[:, x[i] == x[j]]
+                            case ASTS.VarConsEq:
+                                return x[:, x[i] == _parity_val(rhs)]
+
+            case _:
+                print(f"Entered default case with type(ast)={type(ast)}")
+        return x
+
+    def stabilize(self, x):
+        x.setflags(write=False)
+        return x
+
+def _print_res(res):
+    print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
+
+def _main():
+    from analyzer import _print_res, chaotic_iteration
+    from parser import Parser
+    from sys import argv
+    fname = argv[1]
+    with open(fname, 'r') as f:
+        text = f.read()
+    p = Parser(text)
+    g,num_vars = p.parse_complete_program()
+    res = chaotic_iteration(num_vars,g,PAFull)
+    res = map(list,res)
+    _print_res(res)
+   # X = X_old = res
+   # for _ in range(30):
+   #     X = chaotic_iteration(num_vars,g,PADumb)
+   #     X = list(map(list, X))
+   #     _print_res(X_old)
+   #     print("---------------")
+   #     _print_res(X)
+   #     if not all(PADumb(num_vars).equiv(cur, old) for cur,old in zip(X,X_old)):
+   #         assert False
+   #     X_old = X
+
+    #nx.draw(g, with_labels = True)
+    #plt.show()
+
+if __name__ == "__main__":
+    _main()

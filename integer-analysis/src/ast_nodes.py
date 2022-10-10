@@ -47,7 +47,7 @@ class ExprTrue(BoolExpr): pass
 # BaseComp
 # ---------------------------
 class BaseComp(BoolExpr):
-    def __init__(self, lhs, rhs):
+    def __init__(self, lhs: Var, rhs):
         self.lhs = lhs
         self.rhs = rhs
 
@@ -136,7 +136,7 @@ class Assert(Command):
 # Assignment
 # ---------------------------
 class Assignment(Command):
-    def __init__(self, dest , src):
+    def __init__(self, dest: Var, src):
         self.dest = dest
         self.src = src
 
@@ -156,5 +156,6 @@ class BaseVarAssignment(Assignment):
     def __init__(self, dest: Var, src: Var):
         Assignment.__init__(self, dest, src)
 class VarAssignment(BaseVarAssignment): pass
-class DecAssignment(BaseVarAssignment): pass
-class IncAssignment(BaseVarAssignment): pass
+class StepAssigment(BaseVarAssignment): pass
+class DecAssignment(StepAssigment): pass
+class IncAssignment(StepAssigment): pass
