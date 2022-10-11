@@ -3,7 +3,7 @@ import networkx as nx
 
 MAX_ITERATIONS = 1024
 
-def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method):
+def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method, verbose=False):
     from random import shuffle
 
     # TODO: find the in degree 0 label and use it instead of assuming
@@ -36,8 +36,11 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method):
         # poinrt instead of after, this causes a small change in the
         # transformation process - the transformers are applied before
         # joining instead of the other way around.
-        prev_inds_asts = ((j, d['ast']) for j,d in rev_cfg[i].items())
-        transed = (lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
+        prev_inds_asts = list((j, d['ast']) for j,d in rev_cfg[i].items())
+        transed = list(lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
+
+        if verbose: print(f"[{num_iter}] prev_inds_asts={prev_inds_asts}, transed={transed}")
+
         N = lattice.join(transed)
 
         # See the stabilize method documention in BaseAnalysis class
