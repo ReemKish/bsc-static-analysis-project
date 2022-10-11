@@ -75,11 +75,14 @@ class SummationLatticeMember:
     def __sub__(self, c): return self + (-c)
 
     def join(self, other):
+        if self.is_bot(): return other
+        if other.is_bot(): return self
+        if self.is_top() or other.is_top(): return self.top()
         return SummationLatticeMember.top() if self != other else deepcopy(self)
 
 
 from functools import reduce
-class SADumb(BaseAnalysis):
+class SAFull(BaseAnalysis):
     def __init__(self, num_vars: int):
         self.n = num_vars
 
@@ -150,7 +153,7 @@ def _parse_file():
 
 
 def _traverse():
-    sl = SADumb(3)  # TODO - infer n from parser
+    sl = SAFull(3)
     cmds = _parse_file()
     s = sl.top()
     print(s)
@@ -171,8 +174,8 @@ def _main():
     with open(fname, 'r') as f:
         text = f.read()
     p = Parser(text)
-    g, num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars,g,SADumb, verbose=True)
+    cfg, num_vars = p.parse_complete_program()
+    res = chaotic_iteration(num_vars, cfg ,SAFull, verbose=True)
     res = map(list,res)
     _print_res(res)
 
