@@ -88,10 +88,12 @@ class Parser:
                 return
             yield c
 
-    def parse_complete_program(self) -> (nx.DiGraph, int):
+    def parse_complete_program(self, display=False) -> (nx.DiGraph, int):
         num_vars = len(self._var_id_map)
         cfg = nx.DiGraph(list((*c.labels, {"ast": c.ast})
                           for c in self.parse_labeled_commands_iter()))
+        if display: display_cfg(cfg)
+            
         return cfg, num_vars
 
     def _parse_command(self) -> Union[ASTS.SyntaxNode, type(EOF)]:
@@ -275,10 +277,14 @@ class Parser:
         id = self._var_id_map[name]
         return ASTS.Var(name, id)
 
+def display_cfg(cfg):
+    import matplotlib.pyplot as plt
+    nx.draw(cfg, with_labels = True)
+    plt.show()
+
 
 def _main():
     from sys import argv
-    import matplotlib.pyplot as plt
     fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
@@ -287,8 +293,8 @@ def _main():
         print(f"{i}. {c}")
 
     p = Parser(text)
-    g = p.parse_complete_program()
-    nx.draw(g, with_labels = True)
-    plt.show()
+    cfg = p.parse_complete_program()
+    display_cfg(cfg)
+
 if __name__ == "__main__":
     _main()
