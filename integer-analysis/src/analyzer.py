@@ -33,13 +33,13 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method, verbose=False):
         i = work_s.pop()
 
         # In our version we analyze what we know BEFORE each program
-        # poinrt instead of after, this causes a small change in the
+        # pointer instead of after, this causes a small change in the
         # transformation process - the transformers are applied before
         # joining instead of the other way around.
         prev_inds_asts = list((j, d['ast']) for j,d in rev_cfg[i].items())
         transed = list(lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
 
-        if verbose: print(f"[{num_iter}] prev_inds_asts={prev_inds_asts}, transed={transed}")
+        if verbose: print(f"[{num_iter}] i={i}, X={X}, prev_inds_asts={prev_inds_asts}, transed={transed}")
 
         N = lattice.join(transed)
 
