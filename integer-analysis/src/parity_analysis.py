@@ -135,6 +135,7 @@ class PAFull(BaseAnalysis):
         #x,y = map(self._set_rep, (x,y))
         return self._set_rep(x)==self._set_rep(y)
 
+    @_clean_unique
     def transform_nontrivial(self, ast, x):
         #x = x.copy()
         x = self._copy_if_nonwrite(x)
