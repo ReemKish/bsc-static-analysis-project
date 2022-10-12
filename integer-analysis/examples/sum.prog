@@ -1,8 +1,6 @@
-i j n
+n i j
 
-L0  i := ?        L1
-L2  n := i + 1    L3
-L4  j := i + 1    L5
-L6  j := j + 1    L7
-L7  j := j - 1    L8
-L8  assume j = n L9
+L0  n := ?        L1
+L1  assume i = n  L3
+L1  assume i != n L2
+L2  i := n        L3

@@ -49,8 +49,6 @@ class PADumb(BaseAnalysis):
     def join(self, l):
         l = list(l)
         assert len(l)>0
-        if len(l)==1:
-            return l[0]
         return reduce(self.join2, l)
 
     def equiv(self, x, y):

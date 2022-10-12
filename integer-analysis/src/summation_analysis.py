@@ -1,4 +1,6 @@
 from ast_nodes import *
+from analysis import BaseAnalysis
+from analyzer import chaotic_iteration
 from typing import Tuple
 from copy import deepcopy
 
@@ -73,43 +75,52 @@ class SummationLatticeMember:
     def __sub__(self, c): return self + (-c)
 
     def join(self, other):
+        if self.is_bot(): return other
+        if other.is_bot(): return self
+        if self.is_top() or other.is_top(): return self.top()
         return SummationLatticeMember.top() if self != other else deepcopy(self)
 
 
-class SummationLattice:
+from functools import reduce
+class SAFull(BaseAnalysis):
+    def __init__(self, num_vars: int):
+        self.n = num_vars
 
-    def __init__(self, n: int):
-        self.n = n
+    def bottom(self):
+        return (SummationLatticeMember.bot(),) * self.n
 
+    def top(self):
+        return (SummationLatticeMember.top(),) * self.n
 
-    @staticmethod
-    def _equiv(x, y) -> bool:
-        return x == y
+    def join2(self, x, y):
+        return map(SummationLatticeMember.join, x,y)
 
-    def top(self): return (SummationLatticeMember.top(),) * self.n
-    def bot(self): return (SummationLatticeMember.bot(),) * self.n
+    def join(self, l):
+        l = list(l)
+        assert len(l)>0
+        return reduce(self.join2, l)
 
-    def join(self, X, Y) -> Tuple[AbsVal | str, ...]:
-        return tuple(self._join(x,y) for x,y in zip(X,Y))
+    def equiv(self, x, y):
+        return all(a==b for a,b in zip(x,y))
 
-    def transform(self, node, X) -> Tuple[AbsVal | str, ...]:
-        Y = deepcopy(list(X))
+    def transform_nontrivial(self, ast, x):
+        Y = deepcopy(list(x))
         new = lambda absval: SummationLatticeMember(absval=absval)
-        match node:
+        match ast:
             # ----- Assignment -----
             case ConstAssignment():
-                Y[node.dest.id] = new(AbsVal(const=node.src))
+                Y[ast.dest.id] = new(AbsVal(const=ast.src))
             case UnknownAssigment():
-                Y[node.dest.id] = new(AbsVal(unknown=node.src))
+                Y[ast.dest.id] = new(AbsVal(unknown=ast.src))
             case VarAssignment():
-                Y[node.dest.id] = Y[node.src.id]
+                Y[ast.dest.id] = Y[ast.src.id]
             case IncAssignment():
-                Y[node.dest.id] = Y[node.src.id] + 1
+                Y[ast.dest.id] = Y[ast.src.id] + 1
             case DecAssignment():
-                Y[node.dest.id] = Y[node.src.id] - 1
+                Y[ast.dest.id] = Y[ast.src.id] - 1
             # ----- Assume -----
             case Assume():
-                expr = node.expr
+                expr = ast.expr
                 match expr:
                     case ExprFalse():
                         res = False
@@ -122,8 +133,11 @@ class SummationLattice:
                         lhs = Y[expr.lhs.id]
                         res = (lhs == rhs) ^ negate
                 if res is False:
-                    Y = self.bot()
+                    Y = self.bottom()
         return tuple(Y)
+
+    def stabilize(self, x):
+        return tuple(x)
 
 
 def _parse_file():
@@ -138,8 +152,8 @@ def _parse_file():
     return cmds
 
 
-def _main():
-    sl = SummationLattice(3)  # TODO - infer n from parser
+def _traverse():
+    sl = SAFull(3)
     cmds = _parse_file()
     s = sl.top()
     print(s)
@@ -148,6 +162,22 @@ def _main():
         s = sl.transform(node, s)
         print(cmd)
         print(s)
+
+
+def _print_res(res):
+    print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
+
+def _main():
+    from sys import argv
+    from parser import Parser
+    fname = argv[1]
+    with open(fname, 'r') as f:
+        text = f.read()
+    p = Parser(text)
+    cfg, num_vars = p.parse_complete_program()
+    res = chaotic_iteration(num_vars, cfg ,SAFull, verbose=True)
+    res = map(list,res)
+    _print_res(res)
 
 
 if __name__ == "__main__":

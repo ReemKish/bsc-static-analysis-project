@@ -12,7 +12,8 @@ def _find_start_node(cfg: nx.DiGraph):
     return root_nodes[0]
 
 def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
-                      method: Type[analysis.BaseAnalysis]):
+                      method: Type[analysis.BaseAnalysis],
+                      verbose=False):
     from random import shuffle
 
     cfg = nx.convert_node_labels_to_integers(cfg, label_attribute="original_label")
@@ -43,11 +44,14 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
         i = work_s.pop()
 
         # In our version we analyze what we know BEFORE each program
-        # poinrt instead of after, this causes a small change in the
+        # pointer instead of after, this causes a small change in the
         # transformation process - the transformers are applied before
         # joining instead of the other way around.
-        prev_inds_asts = ((j, d['ast']) for j,d in rev_cfg[i].items())
-        transed = (lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
+        prev_inds_asts = list((j, d['ast']) for j,d in rev_cfg[i].items())
+        transed = list(lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
+
+        if verbose: print(f"[{num_iter}] i={i}, X={X}, prev_inds_asts={prev_inds_asts}, transed={transed}")
+
         N = lattice.join(transed)
 
         # See the stabilize method documention in BaseAnalysis class
