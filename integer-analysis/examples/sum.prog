@@ -1,6 +1,6 @@
-n i j
+n i
 
 L0  n := ?        L1
-L1  assume i = n  L3
 L1  assume i != n L2
+L1  assume i = n  L3
 L2  i := n        L3

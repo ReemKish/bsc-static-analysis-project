@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from analyzer import debug_analysis
 from analysis import BaseAnalysis
 import ast_nodes as ASTS
 from lattice import *
@@ -49,7 +50,6 @@ class SummationAnalysis(BaseAnalysis):
 
     def transform_nontrivial(self, ast, x):
         Y = deepcopy(list(x))
-        print(f"x={x}")
         match ast:
             # ----- Assignment -----
             case ASTS.ConstAssignment():
@@ -91,16 +91,7 @@ def summation_analysis(num_vars):
 
 
 def _main():
-    from sys import argv
-    from parser import Parser
-    from analyzer import chaotic_iteration, _print_res
-    fname = argv[1]
-    with open(fname, 'r') as f:
-        text = f.read()
-    p = Parser(text)
-    cfg, num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars, cfg, summation_analysis, verbose=True)
-    _print_res(res)
+    debug_analysis(summation_analysis)
 
 if __name__ == "__main__":
     _main()

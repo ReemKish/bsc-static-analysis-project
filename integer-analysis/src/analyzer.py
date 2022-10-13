@@ -66,24 +66,17 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
         if num_iter>=MAX_ITERATIONS:
             assert False, f"Iteration didn't finish in {MAX_ITERATIONS} iterations."
     return {cfg.nodes[i]['original_label']:X[i] for i in range(n)}
+
 def _print_res(res):
     print('\n'.join(f'{i}. {res[i]}' for i in res.keys()))
 
-def test_analysis(method: Type[analysis.BaseAnalysis]):
+def debug_analysis(method: Type[analysis.BaseAnalysis]):
     from parser import Parser
     from sys import argv
     fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
     p = Parser(text)
-    g,num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars,g,method)
+    cfg, num_vars = p.parse_complete_program()
+    res = chaotic_iteration(num_vars, cfg, method)
     _print_res(res)
-
-
-def _main():
-    from parity_analysis import PADumb
-    test_analysis(PADumb)
-
-if __name__ == "__main__":
-    _main()
