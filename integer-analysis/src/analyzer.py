@@ -15,8 +15,6 @@ def _find_start_node(cfg: nx.DiGraph):
 def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
                       method: Type[analysis.BaseAnalysis],
                       verbose=False):
-    from random import shuffle
-
     cfg = nx.convert_node_labels_to_integers(cfg, label_attribute="original_label")
 
     n = len(cfg)
@@ -34,13 +32,6 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
 
     num_iter = 0
     while work_s:
-
-        # pop-order randomization
-        #l = list(work_s)
-        #shuffle(l)
-        #i = l.pop()
-        #work_s = set(l)
-
         # no randomization
         i = work_s.pop()
 
