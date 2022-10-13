@@ -3,7 +3,7 @@ import networkx as nx
 
 MAX_ITERATIONS = 1024
 
-def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method, verbose=False):
+def chaotic_iteration(cfg: nx.DiGraph, analysis, verbose=False):
     from random import shuffle
 
     # TODO: find the in degree 0 label and use it instead of assuming
@@ -11,10 +11,9 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method, verbose=False):
     assert cfg.in_degree(0) == 0, "label 0 is starting node for now"
     n = len(cfg)
     rev_cfg = nx.reverse_view(cfg)
+    lattice = analysis.lat
 
-    lattice = method(num_vars)
-
-    X = [ lattice.top() ] + [ lattice.bottom() for _ in range(n-1) ]
+    X = [ lattice.top() ] + [ lattice.bot() for _ in range(n-1) ]
 
     # start with (1,...,n) without 0 because 0 is already set to top
     initial_inds = range(1,n)
@@ -37,15 +36,15 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph, method, verbose=False):
         # transformation process - the transformers are applied before
         # joining instead of the other way around.
         prev_inds_asts = list((j, d['ast']) for j,d in rev_cfg[i].items())
-        transed = list(lattice.transform(ast,X[j]) for j, ast in prev_inds_asts)
+        transed = list(analysis.transform(ast,X[j]) for j, ast in prev_inds_asts)
 
         if verbose: print(f"[{num_iter}] i={i}, X={X}, prev_inds_asts={prev_inds_asts}, transed={transed}")
 
-        N = lattice.join(transed)
+        N = lattice.join(*transed)
 
         # See the stabilize method documention in BaseAnalysis class
         # for documentation
-        N = lattice.stabilize(N)
+        N = analysis.stabilize(N)
 
         #if len(N)!=num_vars:
         #    print('\n'.join(f"X[i] = {X[i]}",
@@ -70,7 +69,7 @@ def vanilla_iteration(num_vars: int, cfg: nx.DiGraph, method):
 
     lattice = method(num_vars)
 
-    X = [ lattice.top() ] + [ lattice.bottom() for _ in range(n-1) ]
+    X = [ lattice.top() ] + [ lattice.bot() for _ in range(n-1) ]
     for k in range(MAX_ITERATIONS):
         X_old = X.copy()
         for i in range(1,n):
