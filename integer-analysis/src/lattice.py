@@ -38,7 +38,7 @@ class Lattice(ABC):
         if self.is_top(x) or self.is_top(y): return self.top()
         return None
 
-    def join(self, *l):
+    def join(self, l):
         """Join a non-empty sequence of lattice members."""
         l = list(l)
         assert len(l) > 0, 'Attempted join on zero members.'
@@ -115,7 +115,7 @@ class CartProd(Lattice):
     def join_nontrivial(self, X, Y):
         res = []
         for lat, x, y in zip(self.lats, X, Y):
-            res.append(lat.join(x, y))
+            res.append(lat.join([x, y]))
         return tuple(res)
 
 
@@ -131,3 +131,4 @@ class RelProd(Lattice):
     # TODO
     def __init__(self, lats):
         pass
+

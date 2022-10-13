@@ -12,22 +12,24 @@ def _find_start_node(cfg: nx.DiGraph):
     assert len(root_nodes) == 1, "Only one node should have no incoming edges!"
     return root_nodes[0]
 
-def chaotic_iteration(cfg: nx.DiGraph,
-                      analysis: Type[analysis.BaseAnalysis],
+def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
+                      method: Type[analysis.BaseAnalysis],
                       verbose=False):
     from random import shuffle
 
     cfg = nx.convert_node_labels_to_integers(cfg, label_attribute="original_label")
+
     n = len(cfg)
     rev_cfg = nx.reverse_view(cfg)
+    analysis = method(num_vars)
     lattice = analysis.lat
+
     start_node = _find_start_node(cfg)
 
     X = [ lattice.bot() ] * n
     X[start_node] = lattice.top()
 
-    initial_inds = list(range(n))
-    initial_inds.remove(start_node)
+    initial_inds = [i for i in range(n) if i != start_node]
     work_s = set(initial_inds)
 
     num_iter = 0
@@ -51,7 +53,7 @@ def chaotic_iteration(cfg: nx.DiGraph,
 
         if verbose: print(f"[{num_iter}] i={i}, X={X}, prev_inds_asts={prev_inds_asts}, transed={transed}")
 
-        N = lattice.join(*transed)
+        N = lattice.join(transed)
 
         # See the stabilize method documention in BaseAnalysis class
         # for documentation
@@ -64,7 +66,6 @@ def chaotic_iteration(cfg: nx.DiGraph,
         if num_iter>=MAX_ITERATIONS:
             assert False, f"Iteration didn't finish in {MAX_ITERATIONS} iterations."
     return {cfg.nodes[i]['original_label']:X[i] for i in range(n)}
-
 def _print_res(res):
     print('\n'.join(f'{i}. {res[i]}' for i in res.keys()))
 

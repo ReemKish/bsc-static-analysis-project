@@ -49,6 +49,7 @@ class SummationAnalysis(BaseAnalysis):
 
     def transform_nontrivial(self, ast, x):
         Y = deepcopy(list(x))
+        print(f"x={x}")
         match ast:
             # ----- Assignment -----
             case ASTS.ConstAssignment():
@@ -83,6 +84,11 @@ class SummationAnalysis(BaseAnalysis):
                     Y = self.lat.bot()
         return tuple(Y)
 
+def summation_analysis(num_vars):
+    lat = CartProd([SummationLattice()] * num_vars)
+    SA = SummationAnalysis(lat)
+    return SA
+
 
 def _main():
     from sys import argv
@@ -93,9 +99,7 @@ def _main():
         text = f.read()
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
-    lat = CartProd([SummationLattice()] * num_vars)
-    SA = SummationAnalysis(lat)
-    res = chaotic_iteration(cfg, SA, verbose=False)
+    res = chaotic_iteration(num_vars, cfg, summation_analysis, verbose=True)
     _print_res(res)
 
 if __name__ == "__main__":
