@@ -133,6 +133,7 @@ class PAFull(BaseAnalysis):
         #x,y = map(self._set_rep, (x,y))
         return self._set_rep(x)==self._set_rep(y)
 
+    @_clean_unique
     def transform_nontrivial(self, ast, x):
         #x = x.copy()
         x = self._copy_if_nonwrite(x)
@@ -175,30 +176,8 @@ def _print_res(res):
     print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
 
 def _main():
-    from analyzer import _print_res, chaotic_iteration
-    from parser import Parser
-    from sys import argv
-    fname = argv[1]
-    with open(fname, 'r') as f:
-        text = f.read()
-    p = Parser(text)
-    g,num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars,g,PAFull)
-    res = map(list,res)
-    _print_res(res)
-   # X = X_old = res
-   # for _ in range(30):
-   #     X = chaotic_iteration(num_vars,g,PADumb)
-   #     X = list(map(list, X))
-   #     _print_res(X_old)
-   #     print("---------------")
-   #     _print_res(X)
-   #     if not all(PADumb(num_vars).equiv(cur, old) for cur,old in zip(X,X_old)):
-   #         assert False
-   #     X_old = X
-
-    #nx.draw(g, with_labels = True)
-    #plt.show()
+    from analyzer import test_analysis
+    test_analysis(PAFull)
 
 if __name__ == "__main__":
     _main()

@@ -1,22 +1,33 @@
 #!/usr/bin/env python3
 import networkx as nx
+from typing import Type
+import analysis
 
 MAX_ITERATIONS = 1024
 
-def chaotic_iteration(cfg: nx.DiGraph, analysis, verbose=False):
+
+def _find_start_node(cfg: nx.DiGraph):
+    root_nodes = [n for n,d in cfg.in_degree() if d==0]
+    assert len(root_nodes) > 0, "There should be a node with no incoming edges"
+    assert len(root_nodes) == 1, "Only one node should have no incoming edges!"
+    return root_nodes[0]
+
+def chaotic_iteration(cfg: nx.DiGraph,
+                      analysis: Type[analysis.BaseAnalysis],
+                      verbose=False):
     from random import shuffle
 
-    # TODO: find the in degree 0 label and use it instead of assuming
-    # it is always label 0
-    assert cfg.in_degree(0) == 0, "label 0 is starting node for now"
+    cfg = nx.convert_node_labels_to_integers(cfg, label_attribute="original_label")
     n = len(cfg)
     rev_cfg = nx.reverse_view(cfg)
     lattice = analysis.lat
+    start_node = _find_start_node(cfg)
 
-    X = [ lattice.top() ] + [ lattice.bot() for _ in range(n-1) ]
+    X = [ lattice.bot() ] * n
+    X[start_node] = lattice.top()
 
-    # start with (1,...,n) without 0 because 0 is already set to top
-    initial_inds = range(1,n)
+    initial_inds = list(range(n))
+    initial_inds.remove(start_node)
     work_s = set(initial_inds)
 
     num_iter = 0
@@ -46,69 +57,32 @@ def chaotic_iteration(cfg: nx.DiGraph, analysis, verbose=False):
         # for documentation
         N = analysis.stabilize(N)
 
-        #if len(N)!=num_vars:
-        #    print('\n'.join(f"X[i] = {X[i]}",
-        #                    f"transed = {transed}",
-        #                    f"N = {N}"
-        #                   )
-        #         )
-
         if not lattice.equiv(N,X[i]):
             X[i] = N
             work_s.update(cfg[i])
         num_iter+=1
         if num_iter>=MAX_ITERATIONS:
             assert False, f"Iteration didn't finish in {MAX_ITERATIONS} iterations."
-    return X
-
-def vanilla_iteration(num_vars: int, cfg: nx.DiGraph, method):
-    # TODO: find the in degree 0 label and use it instead
-    assert cfg.in_degree(0) == 0, "label 0 is starting node for now"
-    n = len(cfg)
-    rev_cfg = nx.reverse_view(cfg)
-
-    lattice = method(num_vars)
-
-    X = [ lattice.top() ] + [ lattice.bot() for _ in range(n-1) ]
-    for k in range(MAX_ITERATIONS):
-        X_old = X.copy()
-        for i in range(1,n):
-            prev_inds_asts = ((j, d['ast']) for j,d in rev_cfg[i].items())
-            transed = [lattice.transform(ast,X_old[j])
-                      for j,ast in prev_inds_asts]
-            X[i] = lattice.join(transed)
-        if all(lattice.equiv(cur, old) for cur,old in zip(X,X_old)):
-            return X
-    assert False, f"Iteration didn't finish in {MAX_ITERATIONS} iterations."
+    return {cfg.nodes[i]['original_label']:X[i] for i in range(n)}
 
 def _print_res(res):
-    print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
+    print('\n'.join(f'{i}. {res[i]}' for i in res.keys()))
 
-def _main():
+def test_analysis(method: Type[analysis.BaseAnalysis]):
     from parser import Parser
     from sys import argv
-    from parity_analysis import PADumb
     fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
     p = Parser(text)
     g,num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars,g,PADumb)
-    res = map(list,res)
+    res = chaotic_iteration(num_vars,g,method)
     _print_res(res)
-   # X = X_old = res
-   # for _ in range(30):
-   #     X = chaotic_iteration(num_vars,g,PADumb)
-   #     X = list(map(list, X))
-   #     _print_res(X_old)
-   #     print("---------------")
-   #     _print_res(X)
-   #     if not all(PADumb(num_vars).equiv(cur, old) for cur,old in zip(X,X_old)):
-   #         assert False
-   #     X_old = X
 
-    #nx.draw(g, with_labels = True)
-    #plt.show()
+
+def _main():
+    from parity_analysis import PADumb
+    test_analysis(PADumb)
 
 if __name__ == "__main__":
     _main()
