@@ -1,8 +1,10 @@
-from ast_nodes import *
+#!/usr/bin/env python3
+
 from analysis import BaseAnalysis
-from analyzer import chaotic_iteration
-from typing import Tuple
+import ast_nodes as ASTS
+from lattice import *
 from copy import deepcopy
+
 
 class AbsVal:
     """Abstract Value.
@@ -11,12 +13,6 @@ class AbsVal:
     def __init__(self, unknown=None, const=0):
         self.const = const
         self.unknown = unknown
-
-    def inc(self):
-        self.const += 1
-
-    def dec(self):
-        self.const -= 1
 
     def __eq__(self, other):
         return self.unknown == other.unknown and \
@@ -30,7 +26,8 @@ class AbsVal:
         return self.__add__(-1 * other)
 
     def __repr__(self):
-        return f"AbsVal(unknown={self.unknown}, const={self.const})"
+        return str(self)
+        # return f"AbsVal(unknown={self.unknown}, const={self.const})"
 
     def __str__(self):
         if self.unknown is not None and self.const != 0:
@@ -40,154 +37,66 @@ class AbsVal:
         return f"{self.const}"
 
 
-class SummationLatticeMember:
-    """A member of the basic summation lattice (n=1).
-    Is either an abstract value or TOP/BOTTOM. """
+class SummationLattice(Lattice):
+    """The base lattice used for summation analysis."""
 
-    top = lambda: SummationLatticeMember(level=+1)
-    bot = lambda: SummationLatticeMember(level=-1)
-    def is_top(self): return self == SummationLatticeMember.top()
-    def is_bot(self): return self == SummationLatticeMember.bot()
-
-    def __init__(self, absval=None, level=0):
-        self.level = level
-        if level == 0 and not absval:  # level 0 members require a value
-            absval = AbsVal()
-        self.absval = absval
-
-    def __str__(self):
-        if self.is_top(): return '⊤'
-        if self.is_bot(): return '⊥'
-        return str(self.absval)
-
-    __repr__ = __str__
-
-    def __eq__(self, other):
-        match other:
-            case int():
-                return self.absval == AbsVal(const=other)
-            case SummationLatticeMember():
-                return (self.level == other.level) and (self.absval == other.absval)
-
-    def __add__(self, c):
-        assert self.level == 0 and isinstance(c, int)
-        return SummationLatticeMember(absval=self.absval + c)
-    def __sub__(self, c): return self + (-c)
-
-    def join(self, other):
-        if self.is_bot(): return other
-        if other.is_bot(): return self
-        if self.is_top() or other.is_top(): return self.top()
-        return SummationLatticeMember.top() if self != other else deepcopy(self)
+    def join_nontrivial(self, x, y):
+        return self.top() if x != y else x
 
 
-from functools import reduce
-class SAFull(BaseAnalysis):
-    def __init__(self, num_vars: int):
-        self.n = num_vars
-
-    def bottom(self):
-        return (SummationLatticeMember.bot(),) * self.n
-
-    def top(self):
-        return (SummationLatticeMember.top(),) * self.n
-
-    def join2(self, x, y):
-        return map(SummationLatticeMember.join, x,y)
-
-    def join(self, l):
-        l = list(l)
-        assert len(l)>0
-        return reduce(self.join2, l)
-
-    def equiv(self, x, y):
-        return all(a==b for a,b in zip(x,y))
+class SummationAnalysis(BaseAnalysis):
+    """The summation analysis created from a lattice fitted with a transform method."""
 
     def transform_nontrivial(self, ast, x):
         Y = deepcopy(list(x))
-        new = lambda absval: SummationLatticeMember(absval=absval)
         match ast:
             # ----- Assignment -----
-            case ConstAssignment():
-                Y[ast.dest.id] = new(AbsVal(const=ast.src))
-            case UnknownAssigment():
-                Y[ast.dest.id] = new(AbsVal(unknown=ast.src))
-            case VarAssignment():
+            case ASTS.ConstAssignment():
+                Y[ast.dest.id] = AbsVal(const=ast.src)
+            case ASTS.UnknownAssigment():
+                Y[ast.dest.id] = AbsVal(unknown=ast.src)
+            case ASTS.VarAssignment():
                 Y[ast.dest.id] = Y[ast.src.id]
-            case IncAssignment():
+            case ASTS.IncAssignment():
                 Y[ast.dest.id] = Y[ast.src.id] + 1
-            case DecAssignment():
+            case ASTS.DecAssignment():
                 Y[ast.dest.id] = Y[ast.src.id] - 1
             # ----- Assume -----
-            case Assume():
+            case ASTS.Assume():
                 expr = ast.expr
                 match expr:
-                    case ExprFalse():
+                    case ASTS.ExprFalse():
                         res = False
-                    case ExprTrue():
+                    case ASTS.ExprTrue():
                         res = True
-                    case BaseComp():
-                        negate = isinstance(expr, VarNeq) or isinstance(expr, VarConsNeq)
-                        rhs_is_cons = isinstance(expr, BaseVarConsComp)
+                    case ASTS.BaseComp():
+                        negate = isinstance(expr, ASTS.VarNeq) or isinstance(expr, ASTS.VarConsNeq)
+                        rhs_is_cons = isinstance(expr, ASTS.BaseVarConsComp)
                         rhs = expr.rhs if rhs_is_cons else Y[expr.rhs.id]
                         lhs = Y[expr.lhs.id]
-                        res = (lhs == rhs) ^ negate
+                        # self.lat.lats is the list of lattices that compose the CartProd lattice (self.lat) 
+                        # Therfore, the below line uses the equiv() method of the left lattice member.
+                        # In cases where the cartesian product is of different types of lattices, it is important 
+                        # to note which method is used to compare members across the different lattices.
+                        res = (self.lat.lats[expr.lhs.id].equiv(lhs, rhs)) ^ negate
                 if res is False:
-                    Y = self.bottom()
+                    Y = self.lat.bot()
         return tuple(Y)
 
-    def stabilize(self, x):
-        return tuple(x)
-
-
-def _parse_file():
-    from sys import argv
-    from parser import Parser
-    fname = argv[1]
-    with open(fname, 'r') as f:
-        text = f.read()
-    p = Parser(text)
-    cmds = list(p.parse_labeled_commands_iter())
-    # for i, c in enumerate(cmds): print(f"{i}. {c}")
-    return cmds
-
-
-def _traverse():
-    sl = SAFull(3)
-    cmds = _parse_file()
-    s = sl.top()
-    print(s)
-    for cmd in cmds:
-        node = cmd.ast 
-        s = sl.transform(node, s)
-        print(cmd)
-        print(s)
-
-
-def _print_res(res):
-    print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
 
 def _main():
     from sys import argv
     from parser import Parser
+    from analyzer import chaotic_iteration, _print_res
     fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars, cfg ,SAFull, verbose=True)
-    res = map(list,res)
+    lat = CartProd([SummationLattice()] * num_vars)
+    SA = SummationAnalysis(lat)
+    res = chaotic_iteration(cfg, SA, verbose=False)
     _print_res(res)
-
 
 if __name__ == "__main__":
     _main()
-
-
-
-
-
-
-
-
-
