@@ -74,3 +74,11 @@ class BaseAnalysis(ABC):
         accordingally.
         """
         return x
+
+    @abstractmethod
+    def verify_assertion(ASTS.Assert) -> bool:
+        """
+        Returns True if and only if the assertion is completely proven
+        according to the analysis information (the abstract lattice element).
+        """
+        pass
