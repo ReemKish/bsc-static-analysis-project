@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+from ast_nodes import Assert
 import networkx as nx
-from typing import Type
+from typing import Type, List, Tuple, Dict
 import analysis
 
 MAX_ITERATIONS = 1024
@@ -61,6 +62,32 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
 def _print_res(res):
     print('\n'.join(f'{i}. {res[i]}' for i in res.keys()))
 
+def get_all_assertions(cfg: nx.DiGraph) -> List[Tuple[int, Assert]]:
+    """Retrieves all assertion statements of a program from its control flow graph.
+
+    Returns a list of tuples of a the form: (label index, Assert command).
+    """
+    l = []
+    for i in cfg:
+        for ast in [d['ast'] for _,d in cfg[i].items() if isinstance(d['ast'], Assert)]:
+            l.append((i, ast))
+    return l
+
+# def validate_assertions(analysis: analysis.BaseAnalysis,
+#                         assertions: List[Tuple[int, Assert]],
+#                         fixpoint):
+#     """Uses an analysis to validates a sequence of assertions against a fixpoint.
+#
+#     Returns a dictionary mapping each tuple in `assertions` (see get_all_assertions documention)
+#     to a boolean that indicates whether the assertion could be validated (always holds) or not.
+#     """
+#     d = dict()
+#     for label, ass in assertions:
+#         d[(label, ass)] = analysis.validate_assertion(ass, fixpoint)
+#     return d
+        
+
+
 def debug_analysis(method: Type[analysis.BaseAnalysis]):
     from parser import Parser
     from sys import argv
@@ -71,3 +98,17 @@ def debug_analysis(method: Type[analysis.BaseAnalysis]):
     cfg, num_vars = p.parse_complete_program()
     res = chaotic_iteration(num_vars, cfg, method)
     _print_res(res)
+
+
+def run_analysis(method: Type[analysis.BaseAnalysis]):
+    from parser import Parser
+    from sys import argv
+    fname = argv[1]
+    with open(fname, 'r') as f:
+        text = f.read()
+    p = Parser(text)
+    cfg, num_vars = p.parse_complete_program()
+    assertions = get_all_assertions(cfg)
+    fixpoint = chaotic_iteration(num_vars, cfg, method)
+    # d = validate_assertions(method, assertions, fixpoint)
+    _print_res(fixpoint)
