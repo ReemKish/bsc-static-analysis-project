@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from analyzer import debug_analysis
+from analyzer import debug_analysis, run_analysis
 from analysis import BaseAnalysis
 import ast_nodes as ASTS
 from lattice import *
@@ -44,6 +44,12 @@ class SummationLattice(Lattice):
     def join_nontrivial(self, x, y):
         return self.top() if x != y else x
 
+    def inc(self, x):
+        return x if self.is_top(x) or self.is_bot(x) else x + 1
+
+    def dec(self, x):
+        return x if self.is_top(x) or self.is_bot(x) else x - 1
+
 
 class SummationAnalysis(BaseAnalysis):
     """The summation analysis created from a lattice fitted with a transform method."""
@@ -59,17 +65,13 @@ class SummationAnalysis(BaseAnalysis):
             case ASTS.VarAssignment():
                 Y[ast.dest.id] = Y[ast.src.id]
             case ASTS.IncAssignment():
-                Y[ast.dest.id] = Y[ast.src.id] + 1
+                Y[ast.dest.id] =  self.lat.lats[ast.src.id].inc(Y[ast.src.id])
             case ASTS.DecAssignment():
                 Y[ast.dest.id] = Y[ast.src.id] - 1
             # ----- Assume -----
             case ASTS.Assume():
                 expr = ast.expr
                 match expr:
-                    case ASTS.ExprFalse():
-                        res = False
-                    case ASTS.ExprTrue():
-                        res = True
                     case ASTS.BaseComp():
                         negate = isinstance(expr, ASTS.VarNeq) or isinstance(expr, ASTS.VarConsNeq)
                         rhs_is_cons = isinstance(expr, ASTS.BaseVarConsComp)
@@ -91,7 +93,8 @@ def summation_analysis(num_vars):
 
 
 def _main():
-    debug_analysis(summation_analysis)
+    run_analysis(summation_analysis)
+    # debug_analysis(summation_analysis)
 
 if __name__ == "__main__":
     _main()
