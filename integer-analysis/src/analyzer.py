@@ -61,7 +61,7 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
 def _print_res(res):
     print('\n'.join(f'{i}. {res[i]}' for i in res.keys()))
 
-def debug_analysis(method: Type[analysis.BaseAnalysis]):
+def debug_analysis(method: Type[analysis.BaseAnalysis], verbose=False):
     from parser import Parser
     from sys import argv
     fname = argv[1]
@@ -69,5 +69,5 @@ def debug_analysis(method: Type[analysis.BaseAnalysis]):
         text = f.read()
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars, cfg, method)
+    res = chaotic_iteration(num_vars, cfg, method, verbose=verbose)
     _print_res(res)
