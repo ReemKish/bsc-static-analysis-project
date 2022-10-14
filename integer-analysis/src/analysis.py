@@ -17,16 +17,24 @@ class BaseAnalysis(ABC):
         """
         pass
 
+    # @abstractmethod
+    # def check_assertion(self, orc: ASTS.OrChain, x):
+    #     """Checks an assertion's validity on X.
+    #
+    #     orc -- Or chain that is the assertion's conditions.
+    #     Returns true iff the assertion is certain to always hold.
+    #     """
+
     def transform_trivial(self, ast: ASTS.SyntaxNode, x):
         match ast:
             case ASTS.Skip():
                 return x
             case ASTS.Assume(expr=expr):
                 match expr:
-                    case ASTS.ExprTrue():
+                    case ASTS.ExprTrue:
                         return x
-                    case ASTS.ExprFalse():
-                        return self.bot()
+                    case ASTS.ExprFalse:
+                        return self.lat.bot()
             case _:
                 return None
 
