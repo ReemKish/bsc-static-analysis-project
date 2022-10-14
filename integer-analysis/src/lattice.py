@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from functools import reduce
-
+import analysis
 
 class MemberType(Enum):
     """The type of a lattice member.
@@ -81,8 +81,8 @@ class Lattice(ABC):
             returns True iff x and y are the same element. 
           * If both x and y are mid-level lattice members, returns None
         """
-        if self.is_top(x) == self.is_top(y) == True or \
-           self.is_bot(x) == self.is_bot(y) == True:
+        if (self.is_top(x) and self.is_top(y)) or \
+           (self.is_bot(x) and self.is_bot(y)) :
             return True
         if self.is_top(x) != self.is_top(y) or \
            self.is_bot(x) != self.is_bot(y):
@@ -132,3 +132,20 @@ class RelProd(Lattice):
     def __init__(self, lats):
         pass
 
+class LatticeBasedAnalysis(analysis.BaseAnalysis):
+
+    @abstractmethod
+    def lattice(self):
+        pass
+
+    def top(self):
+        return self.lattice().top()
+
+    def bottom(self):
+        return self.lattice().bot()
+
+    def join(self, l):
+        return self.lattice().join(l)
+
+    def equiv(self, x, y):
+        return self.lattice().equiv(x,y)
