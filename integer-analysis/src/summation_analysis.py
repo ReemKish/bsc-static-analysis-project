@@ -45,8 +45,13 @@ class SummationLattice(Lattice):
         return self.top() if x != y else x
 
 
-class SummationAnalysis(BaseAnalysis):
+class SummationAnalysis(LatticeBasedAnalysis):
     """The summation analysis created from a lattice fitted with a transform method."""
+    def __init__(self, num_vars):
+        self.lat = CartProd([SummationLattice()] * num_vars)
+
+    def lattice(self):
+        return self.lat
 
     def transform_nontrivial(self, ast, x):
         Y = deepcopy(list(x))
@@ -84,14 +89,8 @@ class SummationAnalysis(BaseAnalysis):
                     Y = self.lat.bot()
         return tuple(Y)
 
-def summation_analysis(num_vars):
-    lat = CartProd([SummationLattice()] * num_vars)
-    SA = SummationAnalysis(lat)
-    return SA
-
-
 def _main():
-    debug_analysis(summation_analysis)
+    debug_analysis(SummationAnalysis)
 
 if __name__ == "__main__":
     _main()

@@ -2,18 +2,32 @@
 
 from abc import ABC, abstractmethod
 import ast_nodes as ASTS
+from typing import Dict, Optional, Union, Iterable, List
 
 class BaseAnalysis(ABC):
-    def __init__(self, lat):
-        self.lat = lat
+    @abstractmethod
+    def __init__(self, num_vars):
+        self.num_vars = num_vars
 
     @abstractmethod
-    def transform_nontrivial(self, ast: ASTS.SyntaxNode, x):
+    def bottom(self):
+        pass
+
+    @abstractmethod
+    def top(self):
+        pass
+
+    @abstractmethod
+    def join(self, l: Iterable):
         """
-        Transforms the lattice element x according to the abstract syntax
-        tree given in ast, with the assumption that ast is not an ast of
-        a trivial transformation (see cases in transform_trivial for the
-        list of trivial ones).
+        Returns the join of the lattice elements in the iterable l.
+        """
+        pass
+
+    @abstractmethod
+    def equiv(self, x, y):
+        """
+        Returns true iff x and y represent the same abstract lattice element
         """
         pass
 
@@ -26,9 +40,19 @@ class BaseAnalysis(ABC):
                     case ASTS.ExprTrue():
                         return x
                     case ASTS.ExprFalse():
-                        return self.bot()
+                        return self.bottom()
             case _:
                 return None
+
+    @abstractmethod
+    def transform_nontrivial(self, ast: ASTS.SyntaxNode, x):
+        """
+        Transforms the lattice element x according to the abstract syntax
+        tree given in ast, with the assumption that ast is not an ast of
+        a trivial transformation (see cases in transform_trivial for the
+        list of trivial ones).
+        """
+        pass
 
     def transform(self, ast: ASTS.SyntaxNode, x):
         """
@@ -36,7 +60,9 @@ class BaseAnalysis(ABC):
         tree given in ast.
         """
         ret = self.transform_trivial(ast,x)
-        return self.transform_nontrivial(ast,x) if ret is None else ret
+        if ret is not None:
+            return ret
+        return self.transform_nontrivial(ast,x)
 
     def stabilize(self, x):
         """

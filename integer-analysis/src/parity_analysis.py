@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from analysis import BaseAnalysis
-from lattice import Lattice
 from enum import Enum
 import ast_nodes as ASTS
 import numpy as np
@@ -85,46 +84,8 @@ class PADumb(BaseAnalysis):
 def _parity_val(num: int):
     return num%2==0
 
-def _clean_unique(method):
-    def wrapped(self, *args, **kwargs):
-        ret = method(self, *args, **kwargs)
-        return _remove_unique(ret)
-    return wrapped
-
-def _remove_unique(x):
-    return np.unique(x, axis=1)
-
-class ParityLattice(Lattice):
+class PAFull(BaseAnalysis):
     def __init__(self, num_vars):
-        self.n = num_vars
-        self.BOTTOM = np.array([[] for _ in range(self.n)], dtype=bool)
-        prod = itertools.product((True,False),repeat=self.n)
-        self.TOP = np.transpose(list(prod))
-        self.BOTTOM.setflags(write=False)
-        self.TOP.setflags(write=False)
-
-    def bot(self):
-        return self.BOTTOM
-
-    def top(self):
-        return self.TOP
-
-    @_clean_unique
-    def join_nontrivial(self, l):
-        l = list(l)
-        return np.hstack(l)
-
-    def _set_rep(self, x):
-        return { tuple(col) for col in x.transpose() }
-
-    def equiv(self, x, y):
-        print(type(x), type(y))
-        #x,y = map(self._set_rep, (x,y))
-        return self._set_rep(x)==self._set_rep(y)
-
-class ParityAnalysis(BaseAnalysis):
-    def __init__(self, num_vars):
-        self.lat = ParityLattice(num_vars)
         self.n = num_vars
         self.BOTTOM = np.array([[] for _ in range(self.n)], dtype=bool)
         prod = itertools.product((True,False),repeat=self.n)
@@ -139,18 +100,38 @@ class ParityAnalysis(BaseAnalysis):
         print(type(self.TOP),"---------------", type(self.BOTTOM))
         print("---------------------------------")
 
+    def _remove_unique(self, x):
+        return np.unique(x, axis=1)
+
     def _clean_unique(method):
         def wrapped(self, *args, **kwargs):
             ret = method(self, *args, **kwargs)
-            return _remove_unique(ret)
+            return self._remove_unique(ret)
+
         return wrapped
 
     def _copy_if_nonwrite(self,x):
         if not x.flags.writeable:
             return x.copy()
 
-    def _remove_unique(self, x):
-        return np.unique(x, axis=1)
+    def bottom(self):
+        return self.BOTTOM
+
+    def top(self):
+        return self.TOP
+
+    @_clean_unique
+    def join(self, l):
+        l = list(l)
+        return np.hstack(l)
+
+    def _set_rep(self, x):
+        return { tuple(col) for col in x.transpose() }
+
+    def equiv(self, x, y):
+        print(type(x), type(y))
+        #x,y = map(self._set_rep, (x,y))
+        return self._set_rep(x)==self._set_rep(y)
 
     @_clean_unique
     def transform_nontrivial(self, ast, x):
@@ -191,19 +172,12 @@ class ParityAnalysis(BaseAnalysis):
         x.setflags(write=False)
         return x
 
+def _print_res(res):
+    print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
 
 def _main():
-    from sys import argv
-    from parser import Parser
-    from analyzer import chaotic_iteration, _print_res
-    fname = argv[1]
-    with open(fname, 'r') as f:
-        text = f.read()
-    p = Parser(text)
-    cfg, num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars, cfg, ParityAnalysis, verbose=True)
-    _print_res(res)
+    from analyzer import debug_analysis
+    debug_analysis(PAFull)
 
 if __name__ == "__main__":
     _main()
-

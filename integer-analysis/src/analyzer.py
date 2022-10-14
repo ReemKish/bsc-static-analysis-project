@@ -20,15 +20,15 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
     n = len(cfg)
     rev_cfg = nx.reverse_view(cfg)
     analysis = method(num_vars)
-    lattice = analysis.lat
 
     start_node = _find_start_node(cfg)
 
-    X = [ lattice.bot() ] * n
-    X[start_node] = lattice.top()
+    X = [ analysis.bottom() ] * n
+    X[start_node] = analysis.top()
 
-    initial_inds = [i for i in range(n) if i != start_node]
-    work_s = set(initial_inds)
+    initial_worklist_nodes = range(n)
+    work_s = set(initial_worklist_nodes)
+    work_s.remove(start_node)
 
     num_iter = 0
     while work_s:
@@ -44,13 +44,13 @@ def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
 
         if verbose: print(f"[{num_iter}] i={i}, X={X}, prev_inds_asts={prev_inds_asts}, transed={transed}")
 
-        N = lattice.join(transed)
+        N = analysis.join(transed)
 
         # See the stabilize method documention in BaseAnalysis class
         # for documentation
         N = analysis.stabilize(N)
 
-        if not lattice.equiv(N,X[i]):
+        if not analysis.equiv(N,X[i]):
             X[i] = N
             work_s.update(cfg[i])
         num_iter+=1
