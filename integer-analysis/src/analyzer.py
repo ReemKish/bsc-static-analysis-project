@@ -13,14 +13,13 @@ def _find_start_node(cfg: nx.DiGraph):
     assert len(root_nodes) == 1, "Only one node should have no incoming edges!"
     return root_nodes[0]
 
-def chaotic_iteration(num_vars: int, cfg: nx.DiGraph,
-                      method: Type[analysis.BaseAnalysis],
+def chaotic_iteration(cfg: nx.DiGraph,
+                      analysis: analysis.BaseAnalysis,
                       verbose=False):
     cfg = nx.convert_node_labels_to_integers(cfg, label_attribute="original_label")
 
     n = len(cfg)
     rev_cfg = nx.reverse_view(cfg)
-    analysis = method(num_vars)
 
     start_node = _find_start_node(cfg)
 
@@ -108,7 +107,9 @@ def run_analysis(method: Type[analysis.BaseAnalysis]):
         text = f.read()
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
+    analysis = method(num_vars)
     assertions = get_all_assertions(cfg)
-    fixpoint = chaotic_iteration(num_vars, cfg, method)
-    d = verify_assertions(method, assertions, fixpoint)
+    fixpoint = chaotic_iteration(cfg, analysis)
+    d = verify_assertions(analysis, assertions, fixpoint)
+    print(f"d is {d}")
     _print_res(fixpoint)
