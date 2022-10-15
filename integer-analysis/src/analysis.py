@@ -32,7 +32,7 @@ class BaseAnalysis(ABC):
         pass
 
     @abstractmethod
-    def verify_assertion(ass: ASTS.Assert, x) -> bool:
+    def verify_assertion(self, ass: ASTS.Assert, x) -> bool:
         """
         Returns True if and only if the assertion is completely proven
         according to the analysis information (the abstract lattice element).
