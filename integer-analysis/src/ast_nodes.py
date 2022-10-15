@@ -22,6 +22,8 @@ class Var(SyntaxNode):
         self.name = name
         self.id = id
 
+    __str__ = lambda self: self.name
+
 
 # ===============================================
 #      SumExpr
@@ -29,6 +31,8 @@ class Var(SyntaxNode):
 class SumExpr(SyntaxNode):
     def __init__(self, var_list: List[Var]):
         self.var_list = var_list
+
+    __str__ = lambda self: "SUM " + ' '.join(map(str, self.var_list))
 
 
 # ===============================================
@@ -79,9 +83,11 @@ class BaseVarTest(Predicate):
     def __init__(self, var: Var):
         self.var = var
 
-class TestEven(BaseVarTest): pass
+class TestEven(BaseVarTest):
+    __str__ = lambda self: 'EVEN ' + str(self.var) 
 
-class TestOdd(BaseVarTest): pass
+class TestOdd(BaseVarTest):
+    __str__ = lambda self: 'ODD ' + str(self.var) 
 
 
 # SumEq
@@ -89,6 +95,8 @@ class SumEq(Predicate):
     def __init__(self, lhs: SumExpr, rhs: SumExpr):
         self.lhs = lhs
         self.rhs = rhs
+
+    __str__ = lambda self: f"{self.lhs} = {self.rhs}"
 
 
 # ===============================================
@@ -98,6 +106,8 @@ class AndChain(SyntaxNode):
     def __init__(self, pred_list: List[Predicate]):
         self.pred_list = pred_list
 
+    __str__ = lambda self: ' '.join(map(str, self.pred_list))
+
 
 # ===============================================
 #      OrChain
@@ -106,10 +116,14 @@ class OrChain(SyntaxNode):
     def __init__(self, andc_list: List[AndChain]):
         self.andc_list = andc_list
 
-    def __str__(self):
+    def __repr__(self):
         return (  self.__class__.__name__ + "\n\t"
                 + "\n\t".join(map(repr,self.andc_list))
                )
+
+    __str__ = lambda self: ' '.join(map(lambda c: f"({c})", self.andc_list))
+        
+
 
 
 # ===============================================
@@ -132,6 +146,8 @@ class Assume(Command):
 class Assert(Command):
     def __init__(self, orc: OrChain):
         self.orc = orc
+
+    __str__ = lambda self: 'assert ' + str(self.orc)
 
 # Assignment
 # ---------------------------
