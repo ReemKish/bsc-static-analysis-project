@@ -73,18 +73,18 @@ def get_all_assertions(cfg: nx.DiGraph) -> List[Tuple[int, Assert]]:
             l.append((i, ast))
     return l
 
-# def validate_assertions(analysis: analysis.BaseAnalysis,
-#                         assertions: List[Tuple[int, Assert]],
-#                         fixpoint):
-#     """Uses an analysis to validates a sequence of assertions against a fixpoint.
-#
-#     Returns a dictionary mapping each tuple in `assertions` (see get_all_assertions documention)
-#     to a boolean that indicates whether the assertion could be validated (always holds) or not.
-#     """
-#     d = dict()
-#     for label, ass in assertions:
-#         d[(label, ass)] = analysis.validate_assertion(ass, fixpoint)
-#     return d
+def verify_assertions(analysis: analysis.BaseAnalysis,
+                        assertions: List[Tuple[int, Assert]],
+                        fixpoint):
+    """Uses an analysis to verify a sequence of assertions against a fixpoint.
+
+    Returns a dictionary mapping each tuple in `assertions` (see get_all_assertions documention)
+    to a boolean that indicates whether the assertion could be validated (always holds) or not.
+    """
+    d = dict()
+    for label_ind, assertion in assertions:
+        d[(label_ind, assertion)] = analysis.verify_assertion(assertion, fixpoint[label_ind])
+    return d
         
 
 
@@ -110,5 +110,5 @@ def run_analysis(method: Type[analysis.BaseAnalysis]):
     cfg, num_vars = p.parse_complete_program()
     assertions = get_all_assertions(cfg)
     fixpoint = chaotic_iteration(num_vars, cfg, method)
-    # d = validate_assertions(method, assertions, fixpoint)
+    d = verify_assertions(method, assertions, fixpoint)
     _print_res(fixpoint)
