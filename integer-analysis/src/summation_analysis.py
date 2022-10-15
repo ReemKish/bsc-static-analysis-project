@@ -59,7 +59,7 @@ class SummationAnalysis(LatticeBasedAnalysis):
     def lattice(self):
         return self.lat
 
-    def verify_assertion(ass: ASTS.Assert, x) -> bool:
+    def verify_assertion(self, ass: ASTS.Assert, x) -> bool:
         return True  # TODO
 
     def transform_nontrivial(self, ast, x):

@@ -223,8 +223,9 @@ def _print_res(res):
     print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
 
 def _main():
-    from analyzer import debug_analysis
-    debug_analysis(PAFull, verbose=False)
+    from analyzer import run_analysis, debug_analysis
+    # debug_analysis(PAFull, verbose=False)
+    run_analysis(PAFull)
 
 if __name__ == "__main__":
     _main()
