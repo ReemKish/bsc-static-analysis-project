@@ -116,21 +116,20 @@ def print_analysis_results(conclusions):
     STYLE_RED = "\033[31m"
     STYLE_RESET = "\033[0m"
 
-    valid = []; invalid = [(3,3)]
+    valid = []; invalid = []
     for t, verified in conclusions.items():
         (valid if verified else invalid).append(t)
 
     print(f"The program {STYLE_UNDERLINE}does not violate{STYLE_RESET} the following assertions:")
     for label_ind, assertion in valid:
         print(f"  {STYLE_GREEN}✓{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
-        # print("assert (ODD j)")
         print(assertion)
 
     if invalid: 
         print(f"\nThe following assertions {STYLE_UNDERLINE}could not be validated{STYLE_RESET} by the analysis:")
         for label_ind, assertion in invalid:
             print(f"  {STYLE_RED}*{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
-            print("assert (ODD j)")
+            print(assertion)
 
 
 
