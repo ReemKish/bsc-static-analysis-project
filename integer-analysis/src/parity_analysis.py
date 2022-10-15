@@ -84,11 +84,16 @@ class PADumb(BaseAnalysis):
 def _parity_val(num: int):
     return num%2==0
 
+Parity = bool
+ODD = _parity_val(1)
+EVEN = _parity_val(2)
+
 class PAFull(BaseAnalysis):
+
     def __init__(self, num_vars):
         self.n = num_vars
-        self.BOTTOM = np.array([[] for _ in range(self.n)], dtype=bool)
-        prod = itertools.product((True,False),repeat=self.n)
+        self.BOTTOM = np.array([[] for _ in range(self.n)], dtype=Parity)
+        prod = itertools.product((EVEN, ODD),repeat=self.n)
         self.TOP = np.transpose(list(prod))
         self.BOTTOM.setflags(write=False)
         self.TOP.setflags(write=False)
@@ -113,6 +118,7 @@ class PAFull(BaseAnalysis):
     def _copy_if_nonwrite(self,x):
         if not x.flags.writeable:
             return x.copy()
+        return x
 
     def bottom(self):
         return self.BOTTOM
@@ -133,6 +139,42 @@ class PAFull(BaseAnalysis):
         #x,y = map(self._set_rep, (x,y))
         return self._set_rep(x)==self._set_rep(y)
 
+    def _assume_var_parity(self, var : ASTS.Var, parity: Parity, x):
+        x = self._copy_if_nonwrite(x)
+        i = var.id
+        return x[:, x[i] == parity ]
+
+    def _assume_pred(self, pred: ASTS.Predicate, x):
+        parity = None
+        match pred:
+            case ASTS.BaseVarTest(var=var):
+                match pred:
+                    case ASTS.TestOdd():
+                        parity = ODD
+                    case ASTS.TestEven():
+                        parity = EVEN
+                return self._assume_var_parity(var, parity, x)
+        return x
+
+    def _assume_andc(self, andc: ASTS.AndChain, x):
+        print()
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print(f"assume_andc \n{andc} andc Before:\n {x}")
+        for p in andc.pred_list:
+            print(f"assume_pred {p} Before:\n {x}")
+            x = self._assume_pred(p, x)
+            print(f"assume_pred {p} After:\n {x}")
+        print(f"assume_andc \n{andc} andc After:\n {x}")
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<<")
+        print()
+        return x
+
+    def _assume_orc(self, orc: ASTS.OrChain, x):
+        return self.join(self._assume_andc(c, x) for c in orc.andc_list)
+
+    def _assume_assert(self, assertion: ASTS.Assert, x):
+        return self._assume_orc(assertion.orc, x)
+
     @_clean_unique
     def transform_nontrivial(self, ast, x):
         #x = x.copy()
@@ -144,9 +186,9 @@ class PAFull(BaseAnalysis):
                     case ASTS.ConstAssignment():
                         x[dest] = _parity_val(src)
                     case ASTS.UnknownAssigment():
-                        x[dest] = True
+                        x[dest] = EVEN
                         x = np.hstack((x,x))
-                        x[dest, x.shape[1]//2:] = False
+                        x[dest, x.shape[1]//2:] = ODD
                     case ASTS.VarAssignment():
                         x[dest] = x[src.id]
                     case ASTS.StepAssigment():
@@ -162,8 +204,10 @@ class PAFull(BaseAnalysis):
                                 j=rhs.id
                                 return x[:, x[i] == x[j]]
                             case ASTS.VarConsEq:
-                                return x[:, x[i] == _parity_val(rhs)]
-
+                                p = _parity_val(rhs)
+                                return self._assume_var_parity(p)
+            case ASTS.Assert():
+                return self._assume_assert(ast, x)
             case _:
                 print(f"Entered default case with type(ast)={type(ast)}")
         return x
@@ -172,12 +216,15 @@ class PAFull(BaseAnalysis):
         x.setflags(write=False)
         return x
 
+    def verify_assertion(self, ass: ASTS.Assert, x):
+        return self.equiv(x, self._assume_assert(ass, x))
+
 def _print_res(res):
     print('\n'.join(f'{i}. {v}' for i,v in enumerate(res)))
 
 def _main():
     from analyzer import debug_analysis
-    debug_analysis(PAFull)
+    debug_analysis(PAFull, verbose=False)
 
 if __name__ == "__main__":
     _main()

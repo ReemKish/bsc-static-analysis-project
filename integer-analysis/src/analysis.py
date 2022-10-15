@@ -81,4 +81,3 @@ class BaseAnalysis(ABC):
         accordingally.
         """
         return x
-
