@@ -58,7 +58,7 @@ def chaotic_iteration(cfg: nx.DiGraph,
             assert False, f"Iteration didn't finish in {MAX_ITERATIONS} iterations."
     return {cfg.nodes[i]['original_label']:X[i] for i in range(n)}
 
-def _print_res(res):
+def _print_fixpoint(res):
     print('\n'.join(f'{i}. {res[i]}' for i in res.keys()))
 
 def get_all_assertions(cfg: nx.DiGraph) -> List[Tuple[int, Assert]]:
@@ -84,8 +84,6 @@ def verify_assertions(analysis: analysis.BaseAnalysis,
     for label_ind, assertion in assertions:
         d[(label_ind, assertion)] = analysis.verify_assertion(assertion, fixpoint[label_ind])
     return d
-        
-
 
 def debug_analysis(method: Type[analysis.BaseAnalysis], verbose=False):
     from parser import Parser
@@ -95,8 +93,10 @@ def debug_analysis(method: Type[analysis.BaseAnalysis], verbose=False):
         text = f.read()
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
-    res = chaotic_iteration(num_vars, cfg, method, verbose=verbose)
-    _print_res(res)
+    analysis = method(num_vars)
+    assertions = get_all_assertions(cfg)
+    fixpoint = chaotic_iteration(cfg, analysis)
+    _print_fixpoint(fixpoint)
 
 def print_analysis_results(conclusions):
     """Pretty-prints to the console the results of an analysis.
