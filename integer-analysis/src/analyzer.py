@@ -98,6 +98,41 @@ def debug_analysis(method: Type[analysis.BaseAnalysis], verbose=False):
     res = chaotic_iteration(num_vars, cfg, method, verbose=verbose)
     _print_res(res)
 
+def print_analysis_results(conclusions):
+    """Pretty-prints to the console the results of an analysis.
+    
+    The input dictionary is the one returned from verify_assertions.
+    """
+    COLOR = {
+        "HEADER": "",
+        "BLUE": "\033[94m",
+        "GREEN": "\033[92m",
+        "RED": "\033[91m",
+        "ENDC": "\033[0m",
+    }
+    STYLE_UNDERLINE = "\033[4m"
+    STYLE_BOLD = "\033[1m"
+    STYLE_GREEN = "\033[92m"
+    STYLE_RED = "\033[31m"
+    STYLE_RESET = "\033[0m"
+
+    valid = []; invalid = [(3,3)]
+    for t, verified in conclusions.items():
+        (valid if verified else invalid).append(t)
+
+    print(f"The program {STYLE_UNDERLINE}does not violate{STYLE_RESET} the following assertions:")
+    for label_ind, assertion in valid:
+        print(f"  {STYLE_GREEN}✓{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
+        # print("assert (ODD j)")
+        print(assertion)
+
+    if invalid: 
+        print(f"\nThe following assertions {STYLE_UNDERLINE}could not be validated{STYLE_RESET} by the analysis:")
+        for label_ind, assertion in invalid:
+            print(f"  {STYLE_RED}*{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
+            print("assert (ODD j)")
+
+
 
 def run_analysis(method: Type[analysis.BaseAnalysis]):
     from parser import Parser
@@ -110,6 +145,5 @@ def run_analysis(method: Type[analysis.BaseAnalysis]):
     analysis = method(num_vars)
     assertions = get_all_assertions(cfg)
     fixpoint = chaotic_iteration(cfg, analysis)
-    d = verify_assertions(analysis, assertions, fixpoint)
-    print(f"d is {d}")
-    _print_res(fixpoint)
+    conclusions = verify_assertions(analysis, assertions, fixpoint)
+    print_analysis_results(conclusions)
