@@ -31,13 +31,22 @@ class BaseAnalysis(ABC):
         """
         pass
 
-    # @abstractmethod
-    # def check_assertion(self, orc: ASTS.OrChain, x):
-    #     """Checks an assertion's validity on X.
-    #
-    #     orc -- Or chain that is the assertion's conditions.
-    #     Returns true iff the assertion is certain to always hold.
-    #     """
+    @abstractmethod
+    def verify_assertion(ass: ASTS.Assert, x) -> bool:
+        """
+        Returns True if and only if the assertion is completely proven
+        according to the analysis information (the abstract lattice element).
+        """
+
+    @abstractmethod
+    def transform_nontrivial(self, ast: ASTS.SyntaxNode, x):
+        """
+        Transforms the lattice element x according to the abstract syntax
+        tree given in ast, with the assumption that ast is not an ast of
+        a trivial transformation (see cases in transform_trivial for the
+        list of trivial ones).
+        """
+        pass
 
     def transform_trivial(self, ast: ASTS.SyntaxNode, x):
         match ast:
@@ -51,16 +60,6 @@ class BaseAnalysis(ABC):
                         return self.bottom()
             case _:
                 return None
-
-    @abstractmethod
-    def transform_nontrivial(self, ast: ASTS.SyntaxNode, x):
-        """
-        Transforms the lattice element x according to the abstract syntax
-        tree given in ast, with the assumption that ast is not an ast of
-        a trivial transformation (see cases in transform_trivial for the
-        list of trivial ones).
-        """
-        pass
 
     def transform(self, ast: ASTS.SyntaxNode, x):
         """
@@ -83,10 +82,3 @@ class BaseAnalysis(ABC):
         """
         return x
 
-    @abstractmethod
-    def verify_assertion(ASTS.Assert) -> bool:
-        """
-        Returns True if and only if the assertion is completely proven
-        according to the analysis information (the abstract lattice element).
-        """
-        pass
