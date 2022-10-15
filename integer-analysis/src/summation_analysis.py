@@ -59,6 +59,9 @@ class SummationAnalysis(LatticeBasedAnalysis):
     def lattice(self):
         return self.lat
 
+    def verify_assertion(ass: ASTS.Assert, x) -> bool:
+        return True  # TODO
+
     def transform_nontrivial(self, ast, x):
         Y = deepcopy(list(x))
         match ast:
@@ -72,7 +75,7 @@ class SummationAnalysis(LatticeBasedAnalysis):
             case ASTS.IncAssignment():
                 Y[ast.dest.id] =  self.lat.lats[ast.src.id].inc(Y[ast.src.id])
             case ASTS.DecAssignment():
-                Y[ast.dest.id] = Y[ast.src.id] - 1
+                Y[ast.dest.id] =  self.lat.lats[ast.src.id].dec(Y[ast.src.id])
             # ----- Assume -----
             case ASTS.Assume():
                 expr = ast.expr
@@ -92,8 +95,8 @@ class SummationAnalysis(LatticeBasedAnalysis):
         return tuple(Y)
 
 def _main():
-    run_analysis(summation_analysis)
-    # debug_analysis(summation_analysis)
+    # debug_analysis(SummationAnalysis)
+    run_analysis(SummationAnalysis)
 
 if __name__ == "__main__":
     _main()
