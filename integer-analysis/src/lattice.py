@@ -103,6 +103,15 @@ class CartProd(Lattice):
     def __init__(self, lats):
         self.lats = lats
 
+
+    def is_top(self, X) -> bool:
+        """Returns True iff x is the top element."""
+        return all(lat.is_top(x) for x, lat in zip(X, self.lats))
+
+    def is_bot(self, X) -> bool:
+        """Returns True iff x is the bottom element."""
+        return all(lat.is_bot(x) for x, lat in zip(X, self.lats))
+
     def top(self):
         return tuple(lat.top() for lat in self.lats)
 
@@ -160,10 +169,13 @@ class DisjComp(Lattice):
 
 
 class RelProd(Lattice):
-    """The Relational product of a sequence of lattices."""
     # TODO
     def __init__(self, lats):
         pass
+
+def RelProd(lats):
+    """The Relational product of a sequence of lattices."""
+    return DisjComp(CartProd(lats))
 
 class LatticeBasedAnalysis(analysis.BaseAnalysis):
     @abstractmethod
