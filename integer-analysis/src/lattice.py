@@ -58,11 +58,11 @@ class Lattice(ABC):
 
     def is_top(self, x) -> bool:
         """Returns True iff x is the top element."""
-        return isinstance(x, MemberType) and x is MemberType.TOP
+        return isinstance(x, type(self.top())) and x == self.top()
 
     def is_bot(self, x) -> bool:
         """Returns True iff x is the bottom element."""
-        return isinstance(x, MemberType) and x is MemberType.BOT
+        return isinstance(x, type(self.bot())) and x == self.bot()
 
 
     def equiv_nontrivial(self, x, y):
@@ -121,9 +121,42 @@ class CartProd(Lattice):
 
 class DisjComp(Lattice):
     """The Disjunctive completion of a lattice."""
-    # TODO
     def __init__(self, lat):
-        pass
+        self.lat = lat
+
+    def top(self):
+        return { self.lat.top() }
+
+    def bot(self):
+        return { self.lat.bot() }
+
+    def equiv(self, X, Y):
+        # Test equality by double inclusion
+        return self._is_subset(X, Y) and self._is_subset(Y, X)
+
+    def join_nontrivial(self, X, Y):
+        return X.union({y for y in Y if not self._in(y, X)})
+
+    def meet_nontrivial(self, X, Y):
+        return {x for x in X if self._in(x, Y)}.union(
+               {y for y in Y if self._in(y, X)})
+
+    def _in(self, x, Y):
+        """Returns True if lattice member x is in the set Y."""
+        for y in Y:
+            if self.lat.equiv(x, y):
+                return True
+        return False
+
+    def _is_subset(self, X, Y):
+        """Returns True iff X is a subset of Y.
+
+        Both X and Y are assumed to consist soley of lattice members.
+        """
+        for x in X:
+            if not self._in(x, Y):
+                return False
+        return True
 
 
 class RelProd(Lattice):
@@ -133,10 +166,9 @@ class RelProd(Lattice):
         pass
 
 class LatticeBasedAnalysis(analysis.BaseAnalysis):
-
     @abstractmethod
     def lattice(self):
-        pass
+        """Returns the lattice on which the analysis is based."""
 
     def top(self):
         return self.lattice().top()
@@ -149,3 +181,4 @@ class LatticeBasedAnalysis(analysis.BaseAnalysis):
 
     def equiv(self, x, y):
         return self.lattice().equiv(x,y)
+
