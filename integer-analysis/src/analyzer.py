@@ -119,7 +119,7 @@ def print_analysis_results(conclusions):
             print(assertion)
 
     if invalid: 
-        print(f"\nThe following assertions {STYLE_UNDERLINE}could not be validated{STYLE_RESET} by the analysis:")
+        print(f"\nThe analysis {STYLE_UNDERLINE}could not prove{STYLE_RESET} the following assertions:")
         for label_ind, assertion in invalid:
             print(f"  {STYLE_RED}*{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
             print(assertion)
