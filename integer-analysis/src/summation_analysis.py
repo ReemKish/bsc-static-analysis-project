@@ -37,6 +37,9 @@ class AbsVal:
             return f"?{self.unknown}"
         return f"{self.const}"
 
+    def __hash__(self):
+        return hash((self.const, self.unknown))
+
 
 class SummationLattice(Lattice):
     """The base lattice used for summation analysis."""
@@ -54,7 +57,8 @@ class SummationLattice(Lattice):
 class SummationAnalysis(LatticeBasedAnalysis):
     """The summation analysis created from a lattice fitted with a transform method."""
     def __init__(self, num_vars):
-        self.lat = CartProd([SummationLattice()] * num_vars)
+        # self.lat = CartProd([SummationLattice()] * num_vars)
+        self.lat = DisjComp(SummationLattice())
 
     def lattice(self):
         return self.lat
@@ -62,41 +66,82 @@ class SummationAnalysis(LatticeBasedAnalysis):
     def verify_assertion(self, ass: ASTS.Assert, x) -> bool:
         return True  # TODO
 
-    def transform_nontrivial(self, ast, x):
-        Y = deepcopy(list(x))
+    def transform_nontrivial(self, ast, X):
+        return set(map(lambda x: self._transform_nontrivial(ast, x), X))
+
+    def _transform_nontrivial(self, ast, x):
+        if self.lat.lat.is_bot(x): return x
+        y = x
         match ast:
             # ----- Assignment -----
             case ASTS.ConstAssignment():
-                Y[ast.dest.id] = AbsVal(const=ast.src)
+                y = AbsVal(const=ast.src)
             case ASTS.UnknownAssigment():
-                Y[ast.dest.id] = AbsVal(unknown=ast.src)
+                y = AbsVal(unknown=ast.src)
             case ASTS.VarAssignment():
-                Y[ast.dest.id] = Y[ast.src.id]
+                y = y
             case ASTS.IncAssignment():
-                Y[ast.dest.id] =  self.lat.lats[ast.src.id].inc(Y[ast.src.id])
+                y =  self.lat.lat.inc(y)
             case ASTS.DecAssignment():
-                Y[ast.dest.id] =  self.lat.lats[ast.src.id].dec(Y[ast.src.id])
+                y =  self.lat.lat.dec(y)
             # ----- Assume -----
-            case ASTS.Assume():
-                expr = ast.expr
+            case ASTS.Assume(expr=expr):
+                lhs = y
                 match expr:
-                    case ASTS.BaseComp():
-                        negate = isinstance(expr, ASTS.VarNeq) or isinstance(expr, ASTS.VarConsNeq)
-                        rhs_is_cons = isinstance(expr, ASTS.BaseVarConsComp)
-                        rhs = expr.rhs if rhs_is_cons else Y[expr.rhs.id]
-                        lhs = Y[expr.lhs.id]
-                        # self.lat.lats is the list of lattices that compose the CartProd lattice (self.lat) 
-                        # Therfore, the below line uses the equiv() method of the left lattice member.
-                        # In cases where the cartesian product is of different types of lattices, it is important 
-                        # to note which method is used to compare members across the different lattices.
-                        res = (self.lat.lats[expr.lhs.id].equiv(lhs, rhs)) ^ negate
-                if res is False:
-                    Y = self.lat.bot()
-        return tuple(Y)
+                    case ASTS.BaseVarConsComp():
+                        rhs = AbsVal(const=expr.rhs)
+                        lhs_is_const = isinstance(y, AbsVal) and y.unknown is None
+                        match expr:
+                            case ASTS.VarConsEq():
+                                if self.lat.lat.is_bot(lhs) or (lhs_is_const and lhs != rhs):
+                                    y = self.lat.lat.bot()
+                                else:
+                                    y = rhs
+                            case ASTS.VarConsNeq():
+                                if lhs_is_const and lhs == rhs:
+                                    y = self.lat.lat.bot()
+                    case ASTS.BaseVarComp():
+                        negate = isinstance(expr, ASTS.VarNeq)
+                        rhs = y
+                        y = y if (self.lat.lat.equiv(lhs, rhs)) ^ negate else self.lat.lat.bot()
+        return y
+
+    # def transform_nontrivial(self, ast, x):
+    #     Y = deepcopy(list(x))
+    #     match ast:
+    #         # ----- Assignment -----
+    #         case ASTS.ConstAssignment():
+    #             Y[ast.dest.id] = AbsVal(const=ast.src)
+    #         case ASTS.UnknownAssigment():
+    #             Y[ast.dest.id] = AbsVal(unknown=ast.src)
+    #         case ASTS.VarAssignment():
+    #             Y[ast.dest.id] = Y[ast.src.id]
+    #         case ASTS.IncAssignment():
+    #             Y[ast.dest.id] =  self.lat.lats[ast.src.id].inc(Y[ast.src.id])
+    #         case ASTS.DecAssignment():
+    #             Y[ast.dest.id] =  self.lat.lats[ast.src.id].dec(Y[ast.src.id])
+    #         # ----- Assume -----
+    #         case ASTS.Assume():
+    #             expr = ast.expr
+    #             match expr:
+    #                 case ASTS.BaseComp():
+    #                     negate = isinstance(expr, ASTS.VarNeq) or isinstance(expr, ASTS.VarConsNeq)
+    #                     rhs_is_cons = isinstance(expr, ASTS.BaseVarConsComp)
+    #                     rhs = AbsVal(const=expr.rhs) if rhs_is_cons else Y[expr.rhs.id]
+    #                     lhs = Y[expr.lhs.id]
+    #                     # self.lat.lats is the list of lattices that compose the CartProd lattice (self.lat) 
+    #                     # Therfore, the below line uses the equiv() method of the left lattice member.
+    #                     # In cases where the cartesian product is of different types of lattices, it is important 
+    #                     # to note which method is used to compare members across the different lattices.
+    #                     res = (self.lat.lats[expr.lhs.id].equiv(lhs, rhs)) ^ negate
+    #             if res is False:
+    #                 Y = self.lat.bot()
+    #     return tuple(Y)
+
 
 def _main():
-    # debug_analysis(SummationAnalysis)
-    run_analysis(SummationAnalysis)
+    debug_analysis(SummationAnalysis, verbose=True)
+    # run_analysis(SummationAnalysis)
 
 if __name__ == "__main__":
     _main()
