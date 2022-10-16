@@ -56,7 +56,7 @@ class BaseAnalysis(ABC):
                 match expr:
                     case ASTS.ExprTrue:
                         return x
-                    case ASTS.ExprFalse():
+                    case ASTS.ExprFalse:
                         return self.bottom()
             case _:
                 return None
