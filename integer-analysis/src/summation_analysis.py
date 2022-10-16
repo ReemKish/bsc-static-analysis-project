@@ -40,6 +40,16 @@ class AbsVal:
     def __hash__(self):
         return hash((self.const, self.unknown))
 
+    @staticmethod
+    def sum_eq(l1, l2):
+        """Returns True iff the sum of the elements in l1 is equal to the sum of the elements in l2."""
+        if sum(x.const for x in l1) != sum(x.const for x in l2):
+            return False
+        l1_unknowns = [x.unknown for x in l1 if x.unknown is not None]
+        l2_unknowns = [x.unknown for x in l2 if x.unknown is not None]
+        return {x.unknown: l1_unknowns.count(x.unknown) for x in l1} == {x.unknown: l2_unknowns.count(x.unknown) for x in l2}
+
+
 
 class SummationLattice(Lattice):
     """The base lattice used for summation analysis."""
@@ -57,91 +67,75 @@ class SummationLattice(Lattice):
 class SummationAnalysis(LatticeBasedAnalysis):
     """The summation analysis created from a lattice fitted with a transform method."""
     def __init__(self, num_vars):
-        # self.lat = CartProd([SummationLattice()] * num_vars)
-        self.lat = DisjComp(SummationLattice())
+        self.lat = RelProd([SummationLattice()] * num_vars)
 
     def lattice(self):
         return self.lat
 
-    def verify_assertion(self, ass: ASTS.Assert, x) -> bool:
-        return True  # TODO
+    def verify_assertion(self, ass: ASTS.Assert, Xset) -> bool:
+        def satisfies_predicate(X, pred):
+            lhs_ids = [var.id for var in pred.lhs.var_list]
+            rhs_ids = [var.id for var in pred.rhs.var_list]
+            lhs = [X[i] for i in lhs_ids]
+            rhs = [X[i] for i in rhs_ids]
+            return AbsVal.sum_eq(lhs, rhs)
+
+        def satisfies_AndChain(X, andc):
+            return all(satisfies_predicate(X, pred) for pred in andc.pred_list)
+
+        def satisfies_OrChain(X, orc):
+            return any(satisfies_AndChain(X, andc) for andc in orc.andc_list)
+
+        return all(satisfies_OrChain(X, ass.orc) for X in Xset)
 
     def transform_nontrivial(self, ast, X):
-        return set(map(lambda x: self._transform_nontrivial(ast, x), X))
+        Y = set()
+        for x in X:
+            y = self._transform_nontrivial(ast, x)
+            if not self.lat.lat.is_bot(y):
+                Y.add(y)
+        return Y
 
     def _transform_nontrivial(self, ast, x):
         if self.lat.lat.is_bot(x): return x
-        y = x
+        Y = deepcopy(list(x))
         match ast:
             # ----- Assignment -----
             case ASTS.ConstAssignment():
-                y = AbsVal(const=ast.src)
+                Y[ast.dest.id] = AbsVal(const=ast.src)
             case ASTS.UnknownAssigment():
-                y = AbsVal(unknown=ast.src)
+                Y[ast.dest.id] = AbsVal(unknown=ast.src)
             case ASTS.VarAssignment():
-                y = y
+                Y[ast.dest.id] = Y[ast.src.id]
             case ASTS.IncAssignment():
-                y =  self.lat.lat.inc(y)
+                Y[ast.dest.id] =  self.lat.lats[ast.src.id].inc(Y[ast.src.id])
             case ASTS.DecAssignment():
-                y =  self.lat.lat.dec(y)
+                Y[ast.dest.id] =  self.lat.lats[ast.src.id].dec(Y[ast.src.id])
             # ----- Assume -----
             case ASTS.Assume(expr=expr):
-                lhs = y
+                lhs = Y[expr.lhs.id]
                 match expr:
                     case ASTS.BaseVarConsComp():
                         rhs = AbsVal(const=expr.rhs)
-                        lhs_is_const = isinstance(y, AbsVal) and y.unknown is None
+                        lhs_is_const = isinstance(lhs, AbsVal) and lhs.unknown is None
                         match expr:
                             case ASTS.VarConsEq():
-                                if self.lat.lat.is_bot(lhs) or (lhs_is_const and lhs != rhs):
-                                    y = self.lat.lat.bot()
+                                if self.lat.lat.lats[expr.lhs.id].is_bot(lhs) or (lhs_is_const and lhs != rhs):
+                                    Y = self.lat.lat.bot()
                                 else:
-                                    y = rhs
+                                    Y[expr.lhs.id] = rhs
                             case ASTS.VarConsNeq():
                                 if lhs_is_const and lhs == rhs:
-                                    y = self.lat.lat.bot()
+                                    Y = self.lat.lat.bot()
                     case ASTS.BaseVarComp():
                         negate = isinstance(expr, ASTS.VarNeq)
-                        rhs = y
-                        y = y if (self.lat.lat.equiv(lhs, rhs)) ^ negate else self.lat.lat.bot()
-        return y
-
-    # def transform_nontrivial(self, ast, x):
-    #     Y = deepcopy(list(x))
-    #     match ast:
-    #         # ----- Assignment -----
-    #         case ASTS.ConstAssignment():
-    #             Y[ast.dest.id] = AbsVal(const=ast.src)
-    #         case ASTS.UnknownAssigment():
-    #             Y[ast.dest.id] = AbsVal(unknown=ast.src)
-    #         case ASTS.VarAssignment():
-    #             Y[ast.dest.id] = Y[ast.src.id]
-    #         case ASTS.IncAssignment():
-    #             Y[ast.dest.id] =  self.lat.lats[ast.src.id].inc(Y[ast.src.id])
-    #         case ASTS.DecAssignment():
-    #             Y[ast.dest.id] =  self.lat.lats[ast.src.id].dec(Y[ast.src.id])
-    #         # ----- Assume -----
-    #         case ASTS.Assume():
-    #             expr = ast.expr
-    #             match expr:
-    #                 case ASTS.BaseComp():
-    #                     negate = isinstance(expr, ASTS.VarNeq) or isinstance(expr, ASTS.VarConsNeq)
-    #                     rhs_is_cons = isinstance(expr, ASTS.BaseVarConsComp)
-    #                     rhs = AbsVal(const=expr.rhs) if rhs_is_cons else Y[expr.rhs.id]
-    #                     lhs = Y[expr.lhs.id]
-    #                     # self.lat.lats is the list of lattices that compose the CartProd lattice (self.lat) 
-    #                     # Therfore, the below line uses the equiv() method of the left lattice member.
-    #                     # In cases where the cartesian product is of different types of lattices, it is important 
-    #                     # to note which method is used to compare members across the different lattices.
-    #                     res = (self.lat.lats[expr.lhs.id].equiv(lhs, rhs)) ^ negate
-    #             if res is False:
-    #                 Y = self.lat.bot()
-    #     return tuple(Y)
-
+                        rhs = Y[expr.rhs.id]
+                        Y = Y if self.lat.lats[expr.lhs.id].equiv(lhs, rhs) ^ negate else self.lat.lat.bot()
+        return tuple(Y)
 
 def _main():
-    debug_analysis(SummationAnalysis, verbose=True)
-    # run_analysis(SummationAnalysis)
+    # debug_analysis(SummationAnalysis, verbose=False)
+    run_analysis(SummationAnalysis)
 
 if __name__ == "__main__":
     _main()
