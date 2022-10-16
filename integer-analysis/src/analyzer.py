@@ -94,8 +94,7 @@ def debug_analysis(method: Type[analysis.BaseAnalysis], verbose=False):
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
     analysis = method(num_vars)
-    assertions = get_all_assertions(cfg)
-    fixpoint = chaotic_iteration(cfg, analysis)
+    fixpoint = chaotic_iteration(cfg, analysis, verbose=verbose)
     _print_fixpoint(fixpoint)
 
 def print_analysis_results(conclusions):
@@ -103,13 +102,6 @@ def print_analysis_results(conclusions):
     
     The input dictionary is the one returned from verify_assertions.
     """
-    COLOR = {
-        "HEADER": "",
-        "BLUE": "\033[94m",
-        "GREEN": "\033[92m",
-        "RED": "\033[91m",
-        "ENDC": "\033[0m",
-    }
     STYLE_UNDERLINE = "\033[4m"
     STYLE_BOLD = "\033[1m"
     STYLE_GREEN = "\033[92m"
@@ -120,10 +112,11 @@ def print_analysis_results(conclusions):
     for t, verified in conclusions.items():
         (valid if verified else invalid).append(t)
 
-    print(f"The program {STYLE_UNDERLINE}does not violate{STYLE_RESET} the following assertions:")
-    for label_ind, assertion in valid:
-        print(f"  {STYLE_GREEN}✓{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
-        print(assertion)
+    if valid: 
+        print(f"The program {STYLE_UNDERLINE}does not violate{STYLE_RESET} the following assertions:")
+        for label_ind, assertion in valid:
+            print(f"  {STYLE_GREEN}✓{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
+            print(assertion)
 
     if invalid: 
         print(f"\nThe following assertions {STYLE_UNDERLINE}could not be validated{STYLE_RESET} by the analysis:")
