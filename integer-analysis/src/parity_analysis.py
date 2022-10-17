@@ -157,16 +157,8 @@ class PAFull(BaseAnalysis):
         return x
 
     def _assume_andc(self, andc: ASTS.AndChain, x):
-        print()
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>")
-        print(f"assume_andc \n{andc} andc Before:\n {x}")
         for p in andc.pred_list:
-            print(f"assume_pred {p} Before:\n {x}")
             x = self._assume_pred(p, x)
-            print(f"assume_pred {p} After:\n {x}")
-        print(f"assume_andc \n{andc} andc After:\n {x}")
-        print("<<<<<<<<<<<<<<<<<<<<<<<<<<")
-        print()
         return x
 
     def _assume_orc(self, orc: ASTS.OrChain, x):
@@ -209,7 +201,7 @@ class PAFull(BaseAnalysis):
             case ASTS.Assert():
                 return self._assume_assert(ast, x)
             case _:
-                print(f"Entered default case with type(ast)={type(ast)}")
+                assert False, "Unhandled AST encountered in PAFull transform"
         return x
 
     def stabilize(self, x):
