@@ -217,6 +217,9 @@ class PAFull(BaseAnalysis):
         return x
 
     def verify_assertion(self, ass: ASTS.Assert, x):
+        if not all(isinstance(p,(ASTS.TestOdd, ASTS.TestEven))
+                   for andc in ass.orc.andc_list for p in andc.pred_list):
+            return False
         return self.equiv(x, self._assume_assert(ass, x))
 
 def _print_res(res):
