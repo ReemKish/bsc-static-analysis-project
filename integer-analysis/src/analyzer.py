@@ -4,7 +4,7 @@ import networkx as nx
 from typing import Type, List, Tuple, Dict
 import analysis
 
-MAX_ITERATIONS = 1024
+MAX_ITERATIONS = 256
 
 
 def _find_start_node(cfg: nx.DiGraph):

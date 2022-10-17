@@ -86,7 +86,7 @@ class SummationAnalysis(LatticeBasedAnalysis):
         def satisfies_OrChain(X, orc):
             return any(satisfies_AndChain(X, andc) for andc in orc.andc_list)
 
-        return all(satisfies_OrChain(X, ass.orc) for X in Xset)
+        return all(satisfies_OrChain(X, ass.orc) for X in Xset) if Xset else False
 
     def transform_nontrivial(self, ast, X):
         Y = set()
@@ -134,8 +134,8 @@ class SummationAnalysis(LatticeBasedAnalysis):
         return tuple(Y)
 
 def _main():
-    # debug_analysis(SummationAnalysis, verbose=False)
-    run_analysis(SummationAnalysis)
+    debug_analysis(SummationAnalysis, verbose=True)
+    # run_analysis(SummationAnalysis)
 
 if __name__ == "__main__":
     _main()
