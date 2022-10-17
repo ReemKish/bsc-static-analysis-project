@@ -118,8 +118,10 @@ def print_analysis_results(conclusions):
             print(f"  {STYLE_GREEN}✓{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
             print(assertion)
 
+    if valid and invalid: print()
+
     if invalid: 
-        print(f"\nThe analysis {STYLE_UNDERLINE}could not prove{STYLE_RESET} the following assertions:")
+        print(f"The analysis {STYLE_UNDERLINE}could not prove{STYLE_RESET} the following assertions:")
         for label_ind, assertion in invalid:
             print(f"  {STYLE_RED}*{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
             print(assertion)
