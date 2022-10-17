@@ -162,7 +162,7 @@ class ConstAssignment(Assignment):
         Assignment.__init__(self, dest, src)
 
 # UnknownAssignment 
-class UnknownAssigment(Assignment):
+class UnknownAssignment(Assignment):
     def __init__(self, dest: Var, src: int):
         # src is an identifier for the specific unknown in this case
         Assignment.__init__(self, dest, src)
@@ -172,6 +172,6 @@ class BaseVarAssignment(Assignment):
     def __init__(self, dest: Var, src: Var):
         Assignment.__init__(self, dest, src)
 class VarAssignment(BaseVarAssignment): pass
-class StepAssigment(BaseVarAssignment): pass
-class DecAssignment(StepAssigment): pass
-class IncAssignment(StepAssigment): pass
+class StepAssignment(BaseVarAssignment): pass
+class DecAssignment(StepAssignment): pass
+class IncAssignment(StepAssignment): pass

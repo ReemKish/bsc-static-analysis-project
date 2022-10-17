@@ -103,7 +103,7 @@ class SummationAnalysis(LatticeBasedAnalysis):
             # ----- Assignment -----
             case ASTS.ConstAssignment():
                 Y[ast.dest.id] = AbsVal(const=ast.src)
-            case ASTS.UnknownAssigment():
+            case ASTS.UnknownAssignment():
                 Y[ast.dest.id] = AbsVal(unknown=ast.src)
             case ASTS.VarAssignment():
                 Y[ast.dest.id] = Y[ast.src.id]

@@ -185,13 +185,13 @@ class PAFull(BaseAnalysis):
                 match ast:
                     case ASTS.ConstAssignment():
                         x[dest] = _parity_val(src)
-                    case ASTS.UnknownAssigment():
+                    case ASTS.UnknownAssignment():
                         x[dest] = EVEN
                         x = np.hstack((x,x))
                         x[dest, x.shape[1]//2:] = ODD
                     case ASTS.VarAssignment():
                         x[dest] = x[src.id]
-                    case ASTS.StepAssigment():
+                    case ASTS.StepAssignment():
                         x[dest] = ~x[src.id]
             case ASTS.Assume(expr=expr):
                 match expr:

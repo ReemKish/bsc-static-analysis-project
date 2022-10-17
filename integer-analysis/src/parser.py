@@ -120,7 +120,7 @@ class Parser:
             self._next_token()
             i = self._get_unknown_id()
             self._inc_unknown_id()
-            return ASTS.UnknownAssigment(dest , i)
+            return ASTS.UnknownAssignment(dest , i)
         elif kind == TokenKind.INTEGER:
             return ASTS.ConstAssignment(dest, self._parse_integer())
         elif kind == TokenKind.VARIABLE:
