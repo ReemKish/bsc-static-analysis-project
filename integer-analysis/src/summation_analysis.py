@@ -108,9 +108,9 @@ class SummationAnalysis(LatticeBasedAnalysis):
             case ASTS.VarAssignment():
                 Y[ast.dest.id] = Y[ast.src.id]
             case ASTS.IncAssignment():
-                Y[ast.dest.id] =  self.lat.lats[ast.src.id].inc(Y[ast.src.id])
+                Y[ast.dest.id] =  self.lat.lat.lats[ast.src.id].inc(Y[ast.src.id])
             case ASTS.DecAssignment():
-                Y[ast.dest.id] =  self.lat.lats[ast.src.id].dec(Y[ast.src.id])
+                Y[ast.dest.id] =  self.lat.lat.lats[ast.src.id].dec(Y[ast.src.id])
             # ----- Assume -----
             case ASTS.Assume(expr=expr):
                 lhs = Y[expr.lhs.id]
@@ -130,7 +130,7 @@ class SummationAnalysis(LatticeBasedAnalysis):
                     case ASTS.BaseVarComp():
                         negate = isinstance(expr, ASTS.VarNeq)
                         rhs = Y[expr.rhs.id]
-                        Y = Y if self.lat.lats[expr.lhs.id].equiv(lhs, rhs) ^ negate else self.lat.lat.bot()
+                        Y = Y if self.lat.lat.lats[expr.lhs.id].equiv(lhs, rhs) ^ negate else self.lat.lat.bot()
         return tuple(Y)
 
 def _main():
