@@ -16,7 +16,7 @@ class TokenKind(Enum):
     SKIP     = 1
     ASSUME   = 2
     ASSERT   = 3
-    UNKNOWN    = 4
+    UNKNOWN  = 4
     LABEL    = 5
     VARIABLE = 6
     INTEGER  = 7
@@ -26,6 +26,11 @@ class TokenKind(Enum):
     EVEN = 11
     ODD = 12
     SUM = 13
+    FIELD = 14
+    NULL = 15
+    LS = 16
+    NOLS = 17
+    NEW = 18
 
     #COMMAND_KEYWORDS = {SKIP, ASSUME, ASSERT}
     #BOOL_EXPR_KEYWORDS = {TRUE, FALSE, EVEN, ODD}
@@ -70,6 +75,12 @@ class VarTok(Token):
         self.name : str = name
     __str__ = lambda self: f"Var[{self.name}]"
 
+class FieldTok(Token):
+    def __init__(self, var: VarTok):
+        Token.__init__(self, TokenKind.FIELD)
+        self.var: VarTok = var
+    __str__ = lambda self: f"Field[{self.var}]"
+
 # ----- Integer Token ------------
 class IntTok(Token):
     def __init__(self, val : int):
@@ -98,6 +109,10 @@ class Tokenizer:
         'ODD' : TokenKind.ODD,
         'EVEN': TokenKind.EVEN,
         'SUM': TokenKind.SUM,
+        'NULL': TokenKind.NULL,
+        'LS': TokenKind.LS,
+        'NOLS': TokenKind.NOLS,
+        'new': TokenKind.NEW,
     }
 
     _operators = {
@@ -123,10 +138,6 @@ class Tokenizer:
             self._skip_whitespace()
         if self._eof():
             tok = Token(TokenKind.EOF)
-        elif self._cur() == 'L':  # label (e.g. "L13")
-            self._next_char()
-            ind = self._next_lit_numeric()
-            tok = LabelTok(ind)
         elif self._cur() == '?':  # arbitrary value (input)
             self._next_char()
             tok = Token(TokenKind.UNKNOWN)
@@ -145,11 +156,23 @@ class Tokenizer:
         return self._tokens[-1]
 
     def _next_alpha(self) -> Token:
-        identifer = self._next_lit_string()
-        if self._is_reserved_word(identifer):
-            val = Tokenizer._reserved_words[identifer]
+        prefix = ''
+        if self._cur() == 'L':
+            prefix = 'L'
+            self._next_char()
+            if self._cur().isdigit(): # label (e.g. "L13")
+                ind = self._next_lit_numeric()
+                return LabelTok(ind)
+        identifier = prefix + self._next_lit_string()
+        if self._is_reserved_word(identifier):
+            val = Tokenizer._reserved_words[identifier]
             return Token(val)
-        return VarTok(identifer)
+        if '.' in identifier:
+            l = identifier.split('.')
+            assert len(l)==2 and l[1]=='n', "Expected a token of the form var.n"
+            v, _ = l
+            return FieldTok(VarTok(v))
+        return VarTok(identifier)
 
     def _next_lit_numeric(self) -> int:
         i = self._pos
@@ -160,7 +183,7 @@ class Tokenizer:
 
     def _next_lit_string(self) -> str:
         i = self._pos
-        while not self._eof() and self._cur().isalpha():
+        while not self._eof() and (self._cur().isalpha() or self._cur() == '.'):
             self._next_char()
         j = self._pos
         return self.text[i:j]

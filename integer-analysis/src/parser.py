@@ -104,39 +104,56 @@ class Parser:
             return self._parse_assume()
         elif kind == TokenKind.ASSERT:
             return self._parse_assert()
-        elif kind == TokenKind.VARIABLE:
+        elif kind in (TokenKind.VARIABLE, TokenKind.FIELD):
             return self._parse_assignment()
         assert False, "Exhausted cases"
         #CommandKeywords = [TokenKind.SKIP, TokenKind.ASSERT, TokenKind.ASSUME]
         #self._expect_cur_token(CommandKeywords+[TokenKind.VARIABLE])
 
     def _parse_assignment(self) -> ASTS.Assignment:
-        assert self._tkind() == TokenKind.VARIABLE
-        dest = self._parse_var()
+        dest, dest_is_field = self._parse_var_or_field()
         assert self._token.op == Op.ASSIGN, (f"Expected assignment operator, found {self._token} instead")
         self._next_token()
         kind = self._tkind()
-        if kind == TokenKind.UNKNOWN:
-            self._next_token()
-            i = self._get_unknown_id()
-            self._inc_unknown_id()
-            return ASTS.UnknownAssignment(dest , i)
-        elif kind == TokenKind.INTEGER:
-            return ASTS.ConstAssignment(dest, self._parse_integer())
-        elif kind == TokenKind.VARIABLE:
-            src = self._parse_var()
-            if (self._tkind() == TokenKind.OPERATOR
-                and self._token.op in (Op.PLUS, Op.MINUS)):
-                op = self._token.op
+        if dest_is_field:
+            assert kind == TokenKind.VARIABLE, "Only a variable can be assigned to a field"
+        match kind:
+            case TokenKind.UNKNOWN | TokenKind.NULL | TokenKind.NEW:
                 self._next_token()
-                num = self._parse_integer()
-                assert (num == 1)
-                if op == Op.PLUS:
-                    return ASTS.IncAssignment(dest, src)
-                elif op == Op.MINUS:
-                    return ASTS.DecAssignment(dest, src)
-            else:
-                return ASTS.VarAssignment(dest, src)
+                match kind:
+                    case TokenKind.NULL:
+                        return ASTS.NullAssignment(dest)
+                    case TokenKind.NEW:
+                        return ASTS.NewAssignment(dest)
+                    case TokenKind.UNKNOWN:
+                        i = self._get_unknown_id()
+                        self._inc_unknown_id()
+                        return ASTS.UnknownAssignment(dest , i)
+            case TokenKind.INTEGER:
+                return ASTS.ConstAssignment(dest, self._parse_integer())
+            case TokenKind.VARIABLE | TokenKind.FIELD:
+                src, src_is_field = self._parse_var_or_field()
+                if (self._tkind() == TokenKind.OPERATOR
+                    and self._token.op in (Op.PLUS, Op.MINUS)):
+                    assert not src_is_field
+                    op = self._token.op
+                    self._next_token()
+                    num = self._parse_integer()
+                    assert (num == 1)
+                    if op == Op.PLUS:
+                        return ASTS.IncAssignment(dest, src)
+                    elif op == Op.MINUS:
+                        return ASTS.DecAssignment(dest, src)
+                else:
+                    match (dest_is_field, src_is_field):
+                        case (False, False):
+                            return ASTS.VarAssignment(dest, src)
+                        case (True, False):
+                            return ASTS.IntoFieldAssignment(dest, src)
+                        case (False, True):
+                            return ASTS.FromFieldAssignment(dest, src)
+                        case (True, True):
+                            assert False, "Assignment from field into field isn't allowed, use an intermediate variable instead"
 
 
         assert False, "Exhausted cases"
@@ -202,25 +219,39 @@ class Parser:
                 return ASTS.ExprTrue
             elif kind == TokenKind.FALSE:
                 return ASTS.ExprFalse
+        return self._parse_comp()
 
-        var1 = self._parse_var()
+    def _parse_comp(self) -> ASTS.BaseComp:
+        lhs = self._parse_var()
 
         op = self._next_op()
         assert op in (Op.EQUAL, Op.NEQUAL)
         is_eq = (op == Op.EQUAL)
 
         if self._tkind() == TokenKind.INTEGER:
-            cons = self._parse_integer()
+            rhs = self._parse_integer()
             if is_eq:
-                return ASTS.VarConsEq(var1, cons)
+                return ASTS.VarConsEq(lhs, rhs)
             else:
-                return ASTS.VarConsNeq(var1, cons)
+                return ASTS.VarConsNeq(lhs, rhs)
         else:
-            var2 = self._parse_var()
-            if is_eq:
-                return ASTS.VarEq(var1, var2)
+            if self._tkind() == TokenKind.NULL:
+                self._next_token()
+                if is_eq:
+                    return ASTS.VarEqNull(lhs)
+                else:
+                    return ASTS.VarNeqNull(lhs)
+            rhs, is_field = self._parse_var_or_field()
+            if is_field:
+                if is_eq:
+                    return ASTS.VarEqField(lhs, rhs)
+                else:
+                    return ASTS.VarNeqField(lhs, rhs)
             else:
-                return ASTS.VarNeq(var1, var2)
+                if is_eq:
+                    return ASTS.VarEq(lhs, rhs)
+                else:
+                    return ASTS.VarNeq(lhs, rhs)
 
     @_with_trailing_advance
     def _next_op(self) -> Op:
@@ -229,21 +260,43 @@ class Parser:
 
     def _parse_predicate(self) -> ASTS.Predicate:
         kind = self._tkind()
-        if kind in {TokenKind.EVEN, TokenKind.ODD}:
+        if kind in (TokenKind.EVEN, TokenKind.ODD):
             return self._parse_parity_bexpr()
+        elif kind in (TokenKind.LS, TokenKind.NOLS):
+           return self._parse_keyword_operand()
         elif kind == TokenKind.SUM:
             return self._parse_sum_comp()
-        assert False, "Exhausted options"
+        elif kind == TokenKind.VARIABLE:
+            return self._parse_comp()
+        assert False, f"Exhausted options, encountered token {self._token}"
 
-    def _parse_parity_bexpr(self) -> ASTS.BaseVarTest:
+    def _parse_keyword_operand(self) -> ASTS.BaseVarComp:
+        op_map = {TokenKind.LS: ASTS.LS, TokenKind.NOLS: ASTS.NOLS}
+        kind = self._tkind()
+        assert kind in op_map
+        self._next_token()
+        lhs = self._parse_var()
+        rhs = self._parse_var()
+        return op_map[kind](lhs, rhs)
+
+
+    def _parse_parity_bexpr(self) -> ASTS.BaseVarTest | ASTS.BaseVarComp:
         kind = self._tkind()
         assert kind in {TokenKind.EVEN, TokenKind.ODD}
         self._next_token()
         var = self._parse_var()
-        if kind == TokenKind.EVEN:
-            return ASTS.TestEven(var)
-        elif kind == TokenKind.ODD:
-            return ASTS.TestOdd(var)
+        if self._tkind() == TokenKind.VARIABLE:
+            lhs = var
+            rhs = self._parse_var()
+            if kind == TokenKind.EVEN:
+                return ASTS.EVEN_Path(lhs, rhs)
+            elif kind == TokenKind.ODD:
+                return ASTS.ODD_Path(lhs, rhs)
+        else:
+            if kind == TokenKind.EVEN:
+                return ASTS.TestEven(var)
+            elif kind == TokenKind.ODD:
+                return ASTS.TestOdd(var)
 
     def _parse_sum_comp(self) -> ASTS.SumEq:
         sum1 = self._parse_sum_expr()
@@ -270,12 +323,26 @@ class Parser:
         assert self._tkind() == TokenKind.INTEGER
         return self._token.val
 
-    @_with_trailing_advance
     def _parse_var(self) -> ASTS.Var:
         assert self._tkind() == TokenKind.VARIABLE
-        name = self._token.name
+        v,is_field = self._parse_var_or_field()
+        assert not is_field
+        return v
+
+    @_with_trailing_advance
+    def _parse_var_or_field(self) -> (ASTS.Var, bool):
+        assert self._tkind() in (TokenKind.VARIABLE, TokenKind.FIELD)
+        if self._tkind() == TokenKind.FIELD:
+            v_tok = self._token.var
+            is_field = True
+        else:
+            v_tok = self._token
+            is_field = False
+        name = v_tok.name
         id = self._var_id_map[name]
-        return ASTS.Var(name, id)
+        return ASTS.Var(name, id), is_field
+
+
 
 def display_cfg(cfg):
     import matplotlib.pyplot as plt
@@ -294,7 +361,7 @@ def _main():
 
     p = Parser(text)
     cfg = p.parse_complete_program()
-    display_cfg(cfg)
+    #display_cfg(cfg)
 
 if __name__ == "__main__":
     _main()

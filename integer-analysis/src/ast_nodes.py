@@ -42,6 +42,12 @@ class BoolExpr(SyntaxNode):
     """
     Base class for boolean expressions used in assume statements.
     """
+
+class Predicate(SyntaxNode):
+    """
+    Base class for boolean predicates used in assert statements.
+    """
+
     pass
 
 class ExprFalse(BoolExpr): pass
@@ -56,9 +62,9 @@ class BaseComp(BoolExpr):
         self.rhs = rhs
 
 # BaseVarComp
-class BaseVarComp(BaseComp):
+class BaseVarComp(BaseComp, Predicate):
     def __init__(self, lhs: Var, rhs: Var):
-        BaseComp.__init__(self, lhs,rhs)
+        BaseComp.__init__(self, lhs, rhs)
 class VarEq(BaseVarComp): pass
 class VarNeq(BaseVarComp): pass
 
@@ -68,12 +74,6 @@ class BaseVarConsComp(BaseComp):
         BaseComp.__init__(self, lhs,rhs)
 class VarConsEq(BaseVarConsComp): pass
 class VarConsNeq(BaseVarConsComp): pass
-
-
-class Predicate(SyntaxNode):
-    """
-    Base class for boolean predicates used in assert statements.
-    """
 
 # BaseVarTest
 # ---------------------------
@@ -175,3 +175,32 @@ class VarAssignment(BaseVarAssignment): pass
 class StepAssignment(BaseVarAssignment): pass
 class DecAssignment(StepAssignment): pass
 class IncAssignment(StepAssignment): pass
+
+
+
+# Shape analysis
+class NoSrcAssignment(Assignment):
+    def __init__(self, dest: Var):
+        Assignment.__init__(self, dest, None)
+
+class NullAssignment(NoSrcAssignment): pass
+class NewAssignment(NoSrcAssignment): pass
+
+class FromFieldAssignment(BaseVarAssignment): pass
+class IntoFieldAssignment(BaseVarAssignment): pass
+
+class NoRhsComp(BaseComp):
+    def __init__(self, lhs: Var):
+        BaseComp.__init__(self, lhs, None)
+        self.var = lhs # Another alias
+
+class VarEqNull(NoRhsComp): pass
+class VarNeqNull(NoRhsComp): pass
+
+class VarEqField(BaseVarComp): pass
+class VarNeqField(BaseVarComp): pass
+class LS(BaseVarComp): pass
+class NOLS(BaseVarComp): pass
+class ODD_Path(BaseVarComp): pass
+class EVEN_Path(BaseVarComp): pass
+

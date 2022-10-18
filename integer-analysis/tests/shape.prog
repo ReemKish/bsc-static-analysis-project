@@ -1,0 +1,9 @@
+x y z
+
+L0  x := y.n         L1
+L1  x := NULL        L2
+L2  assert (ODD x y x=y x!=z.n) (LS x y) L3
+L3  assert (ODD x y x=y x!=z.n) (LS x z NOLS y z EVEN x y z!=NULL x=NULL) L4
+L4  z.n := y          L5
+L5  z := NULL          L6
+L6  y := new          L8
