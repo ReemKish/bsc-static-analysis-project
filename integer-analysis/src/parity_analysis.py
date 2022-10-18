@@ -105,13 +105,13 @@ class PAFull(BaseAnalysis):
         print(type(self.TOP),"---------------", type(self.BOTTOM))
         print("---------------------------------")
 
-    def _removeduplicates(self, x):
+    def _remove_duplicates(self, x):
         return np.unique(x, axis=1)
 
-    def _cleanduplicates(method):
+    def _clean_duplicates(method):
         def wrapped(self, *args, **kwargs):
             ret = method(self, *args, **kwargs)
-            return self._removeduplicates(ret)
+            return self._remove_duplicates(ret)
 
         return wrapped
 
@@ -126,7 +126,7 @@ class PAFull(BaseAnalysis):
     def top(self):
         return self.TOP
 
-    @_cleanduplicates
+    @_clean_duplicates
     def join(self, l):
         l = list(l)
         return np.hstack(l)
@@ -175,7 +175,7 @@ class PAFull(BaseAnalysis):
     def _assume_assert(self, assertion: ASTS.Assert, x):
         return self._assume_orc(assertion.orc, x)
 
-    @_cleanduplicates
+    @_clean_duplicates
     def transform_nontrivial(self, ast, x):
         #x = x.copy()
         x = self._copy_if_nonwrite(x)
