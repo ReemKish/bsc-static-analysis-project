@@ -1,0 +1,48 @@
+#     ┏━━━━━━━━━━━━┓
+# ┏━━━┫ loop2.prog ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃   ┗━━━━━━━━━━━━┛                                       ┃
+# ┃ Semi-constant loops example.                           ┃
+# ┃ The product calculation involves nested loops each of  ┃
+# ┃ variable size, but the possible values for these       ┃ 
+# ┃ variables are finite, therefore the analysis manages   ┃
+# ┃ to correctly argue about the calculated value - due to ┃
+# ┃ use of disjunction completion.                         ┃ 
+# ┃ This is not possible with loops of true variable       ┃
+# ┃ length (loops on a variable whose value is `?`).       ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+n a b c i FOUR SIX
+
+# Constants
+L00 FOUR    := 4      L01
+L01 SIX     := 6      L10
+
+# The pair (a,b) can be one of 3 possible combinations:
+L10  n := ?           L11
+L11  assume n = 0     L12
+L12    a := 4         L13
+L13    b := 3         L20
+L11  assume n != 0    L14
+L14    assume n = 1   L15
+L15      a := 8       L16
+L16      b := 1       L20
+L14    assume n != 1  L17
+L17      a := 2       L18
+L18      b := 4       L20
+
+# Set `c := a * b`
+L20  c := 0           L21
+L21  i := 0           L22
+L22  assume b != 0    L23
+L23    i := a         L24
+L24    assume i != 0  L25
+L25      c := c + 1   L26
+L26      i := i - 1   L24
+L24    assume i = 0   L27
+L27    b := b - 1     L22
+L22  assume b = 0     L30
+
+# c is the product of a,b - therefore `SUM c a` is a*(b+1)
+# this expression can have a value of either 10 or 16
+# 4*(3+1) = 16 | 8*(1+1) = 16 | 2*(4+1) = 10
+L30 assert (SUM c a = SUM SIX SIX FOUR) (SUM c a = SUM SIX FOUR) L31  # ✅

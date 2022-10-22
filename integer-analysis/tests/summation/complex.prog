@@ -1,0 +1,88 @@
+#     ┏━━━━━━━━━━━━━━┓
+# ┏━━━┫ complex.prog ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃   ┗━━━━━━━━━━━━━━┛                                   ┃
+# ┃ This program defines 3 procedures: ADD, MUL, JMP.    ┃
+# ┃ Then a script makes use of these procedures to       ┃
+# ┃ arithmetically manipulate some variables in a manner ┃
+# ┃ more complex than simply incrementing/decrementing.  ┃
+# ┃ The correct assertions are validated by the analysis ┃
+# ┃ and the false ones are not.                          ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+X Y Z fiveX tenX twoZ   tmpA tmpB tmpC jmp res operA operB
+
+# ────┤ L1000 Procedure `ADD` ├───────┐
+#    Sets `res := operA + operB`.     │
+L1000  res := operA          L1001  # │
+L1001  assume operB != 0     L1002  # │
+L1002    res := res + 1      L1003  # │
+L1003    operB := operB - 1  L1001  # │
+L1001  assume operB = 0      L2000  # │
+# ────────────────────────────────────┘
+
+# ────┤ L1100 Procedure `MUL` ├───────┐
+#    Sets `res := operA * operB`.     │
+L1100  res := 0              L1101  # │
+L1101  tmpA := operA         L1102  # │
+L1102  tmpB := operB         L1103  # │
+L1103  tmpC := jmp           L1104  # │
+L1104  assume tmpA != 0      L1105  # │
+L1105    operA := res        L1106  # │
+L1106    operB := tmpB       L1107  # │
+# call ADD and return to L1108      # │
+L1107    jmp   := 1108       L1000  # │ 
+L1108    tmpA  := tmpA - 1   L1104  # │
+L1104  assume tmpA = 0       L1109  # │
+L1109    jmp := tmpC         L2000  # │
+# ────────────────────────────────────┘
+
+# ────┤ L2000 Procedure `JMP` ├───────┐
+#   Jumps to various labels based on  │
+#         the value of `jmp`.         │
+L2000  assume jmp  = 1108    L1108  # │
+L2000  assume jmp != 1108    L2001  # │
+L2001  assume jmp  = 14      L0014  # │
+L2001  assume jmp != 14      L2002  # │
+L2002  assume jmp  = 23      L0023  # │
+L2002  assume jmp != 23      L2003  # │
+L2003  assume jmp  = 34      L0034  # │
+L2003  assume jmp != 34      L2004  # │
+L2004  assume jmp  = 37      L0037  # │
+L2004  assume jmp != 37      L2005  # │
+L2005  assume jmp  = 43      L0043  # │
+L2005  assume jmp != 43      L9999  # │
+# ────────────────────────────────────┘
+
+
+#     ┌────────────────────────┐
+# ────┘ PROGRAM STARTING POINT └───────
+
+L09  X := 7        L10
+L10  Y := 10       L11
+L11  operA := X    L12
+L12  operB := 5    L13
+L13  jmp := 14     L1100  # call MUL (X*5) and return to L14
+L14  fiveX := res  L15
+L15  assert(SUM fiveX = SUM X X X)      L16  # ❌ (x*5 != x+x+x)
+L16  assert(SUM fiveX = SUM X X X X X)  L20  # ✅ (x*5  = x+x+x+x+x)
+
+L20  operA := fiveX   L21
+L21  operB := fiveX   L22
+L22  jmp := 23        L1000  # call ADD (fiveX+fiveX) and return to L19
+L23  tenX := res      L24
+L24  assert(SUM tenX = SUM fiveX fiveX)  L30  # ✅ (10*x = 5*x + 5*x)
+
+L30  operA := X    L32
+L32  operB := 2    L33
+L33  jmp := 34     L1100  # call MUL (X*2) and returns to L34
+L34  operA := res  L35
+L35  operB := Y    L36
+L36  jmp := 37     L1000  # call ADD (res+Y) and return to L37
+L37  Z := res      L38    # Z = 2*X + Y
+L38  assert(SUM Z = SUM X X Y)  L40  # ✅ (2*x+y = x+x+y)
+
+L40  operA := Z  L41
+L41  operB := 2  L42
+L42  jmp := 43   L1100  # call MUL (Z*2) and return to L43
+L43  twoZ := res  L44
+L44  assert(SUM twoZ = SUM X Y X X Y X)  L45  # ✅ (2*(2*x+y) = x+y+x+x+y+x)

@@ -1,0 +1,34 @@
+#     ┏━━━━━━━━━━━━┓
+# ┏━━━┫ basic.prog ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃   ┗━━━━━━━━━━━━┛                                     ┃
+# ┃ Basic correctness example.                           ┃
+# ┃ Some assertions below are correct and others         ┃
+# ┃ incorrect (that is, do not necessarily hold at every ┃
+# ┃ case). The analysis distinguishes between the two    ┃
+# ┃ and outputs conclusions appropriately.               ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+i j n ZERO ONE
+
+# constants
+L00  ZERO := 0   L01
+L01  ONE  := 1   L05
+
+# init
+L05  i := 0     L06
+L06  j := 0     L07
+L07  assert(SUM i i i = SUM j j)  L08  # ✅ (0+0+0 = 0+0)
+
+# here we see that the same assertion can be validated or not, under different assumptions:
+L08  n := ?                    L09 
+L09  assume n = 0              L10  
+L10    assert (SUM i = SUM n)  L11  # ✅ (due to the assumption)
+L11    j := 0                  L14
+L09  assume n != 0             L12
+L12    assert (SUM i = SUM n)  L13  # ❌ (due to the assumption)
+L13    j := 1                  L14
+
+# at this point, j is either zero or one:
+L14  assert (SUM j = SUM ZERO)  L15  # ❌ (false if j=1)
+L15  assert (SUM j = SUM ONE)   L16  # ❌ (false if j=0)
+L16  assert (SUM j = SUM ZERO) (SUM j = SUM ONE)  L17  # ✅

@@ -1,0 +1,39 @@
+#     ┏━━━━━━━━━━━━┓
+# ┏━━━┫ loop1.prog ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃   ┗━━━━━━━━━━━━┛                                       ┃
+# ┃ Constant loops example.                                ┃
+# ┃ i and j receive unknown values at start.               ┃
+# ┃ ii, jj hold the values of i, j resp. at the start.     ┃
+# ┃ i is then incremented by 10 and j decremented by 10 -  ┃
+# ┃ by use of constant loops.                              ┃
+# ┃ The sum of i and j did not change due to the operation,┃
+# ┃ therefore the assertion SUM i j == SUM ii jj holds.    ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+i j ii jj k
+
+# init
+L00  i := ?          L01
+L01  j := ?          L02
+L02  ii := i         L03
+L03  jj := j         L04
+
+# assertion 1
+L04  assert(SUM i j = SUM ii jj)  L05  # ✅
+
+# increase i by 10
+L05  k := 10         L06
+L06  assume k != 0   L07
+L07    i := i + 1    L08
+L08    k := k - 1    L06
+L06  assume k = 0    L09
+
+# decrease j by 10
+L09  k := 10         L10
+L10  assume k != 0   L11
+L11    j := j - 1    L12
+L12    k := k - 1    L10
+L10  assume k = 0    L13
+
+# assertion 2
+L13  assert (SUM i j = SUM ii jj)  L14  # ✅

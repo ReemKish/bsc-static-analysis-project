@@ -1,0 +1,20 @@
+#     ┏━━━━━━━━━━━━┓
+# ┏━━━┫ disjc.prog ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃   ┗━━━━━━━━━━━━┛                                     ┃
+# ┃ Disjunctive completion example.                      ┃
+# ┃ The value of n is unknown, but the analysis utilizes ┃
+# ┃ disjunctive completion to deduce that regardless of  ┃
+# ┃ n, the sum of i and j will always be 10.             ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+TEN n i j
+
+L0  TEN := 10                   L1
+L1  n := ?                      L2
+L2  assume n = 0                L3
+L3    i := 5                    L4
+L4    j := 5                    L7
+L2  assume n != 0               L5
+L5    i := 10                   L6
+L6    j := 0                    L7
+L7  assert (SUM i j = SUM TEN)  L8  # ✅
