@@ -135,7 +135,7 @@ class Tokenizer:
         self._skip_whitespace()
         if not self._eof() and self._cur() == '#':  # comment - skip line
             self._skip_till_eoline()
-            self._skip_whitespace()
+            return self.next_token()
         if self._eof():
             tok = Token(TokenKind.EOF)
         elif self._cur() == '?':  # arbitrary value (input)
