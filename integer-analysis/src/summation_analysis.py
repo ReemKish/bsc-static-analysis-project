@@ -134,8 +134,7 @@ class SummationAnalysis(LatticeBasedAnalysis):
         return tuple(Y)
 
 def _main():
-    debug_analysis(SummationAnalysis, verbose=True)
-    # run_analysis(SummationAnalysis)
+    run_analysis(SummationAnalysis)
 
 if __name__ == "__main__":
     _main()
