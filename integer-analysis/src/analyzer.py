@@ -3,8 +3,9 @@ from ast_nodes import Assert
 import networkx as nx
 from typing import Type, List, Tuple, Dict
 import analysis
+from time import sleep
 
-MAX_ITERATIONS = 256
+MAX_ITERATIONS = 2048
 
 
 def _find_start_node(cfg: nx.DiGraph):
@@ -126,18 +127,34 @@ def print_analysis_results(conclusions):
             print(f"  {STYLE_RED}*{STYLE_RESET} {STYLE_BOLD}L{label_ind}{STYLE_RESET}", end=" ")
             print(assertion)
 
+def loading_msg(fname):
+    print(f"Analyzing {fname}... ", end="", flush=True)
+    spinner = "|/-\\"
+    i = 0
+    while not done_analyzing:
+        i = (i + 1) % len(spinner)
+        print(f"{spinner[i]}\b", end="", flush=True)
+        sleep(0.1)
+    print("done.\n")
 
-
+done_analyzing = False
 def run_analysis(method: Type[analysis.BaseAnalysis]):
+    global done_analyzing
+    from threading import Thread
     from parser import Parser
     from sys import argv
+    from os.path import basename
+    done_analyzing = False
     fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
+    Thread(target=loading_msg, args=(basename(fname),)).start()
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
     analysis = method(num_vars)
     assertions = get_all_assertions(cfg)
     fixpoint = chaotic_iteration(cfg, analysis)
     conclusions = verify_assertions(analysis, assertions, fixpoint)
+    done_analyzing = True
+    sleep(0.05)
     print_analysis_results(conclusions)
