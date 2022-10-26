@@ -43,9 +43,10 @@ def chaotic_iteration(cfg: nx.DiGraph,
         prev_inds_asts = list((j, d['ast']) for j,d in rev_cfg[i].items())
         transed = list(analysis.transform(ast,X[j]) for j, ast in prev_inds_asts)
 
-        if verbose: print(f"[{num_iter}] i={i}, X={X}, prev_inds_asts={prev_inds_asts}, transed={transed}")
+        if verbose: print(f"[{num_iter}] i={i}\nX[i]={X[i]}\nprev_inds_asts={prev_inds_asts}\ntransed:\n{transed}\n")
 
         N = analysis.join(transed)
+        if verbose: print(f"N={N}\n\n")
 
         # See the stabilize method documention in BaseAnalysis class
         # for documentation
