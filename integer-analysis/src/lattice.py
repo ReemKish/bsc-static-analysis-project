@@ -167,12 +167,6 @@ class DisjComp(Lattice):
                 return False
         return True
 
-
-class RelProd(Lattice):
-    # TODO
-    def __init__(self, lats):
-        pass
-
 def RelProd(lats):
     """The Relational product of a sequence of lattices."""
     return DisjComp(CartProd(lats))
