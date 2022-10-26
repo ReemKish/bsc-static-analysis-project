@@ -74,6 +74,8 @@ class SummationAnalysis(LatticeBasedAnalysis):
 
     def verify_assertion(self, ass: ASTS.Assert, Xset) -> bool:
         def satisfies_predicate(X, pred):
+            if not isinstance(pred,(ASTS.SumEq)):
+                return False
             lhs_ids = [var.id for var in pred.lhs.var_list]
             rhs_ids = [var.id for var in pred.rhs.var_list]
             lhs = [X[i] for i in lhs_ids]
