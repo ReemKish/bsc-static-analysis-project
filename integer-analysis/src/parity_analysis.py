@@ -48,6 +48,8 @@ class PADumb(BaseAnalysis):
 
     def join(self, l):
         l = list(l)
+        if not l:
+            return self.bottom()
         assert len(l)>0
         return reduce(self.join2, l)
 
@@ -97,13 +99,6 @@ class PAFull(BaseAnalysis):
         self.TOP = np.transpose(list(prod))
         self.BOTTOM.setflags(write=False)
         self.TOP.setflags(write=False)
-        print("---------------------------------")
-        print(self.n)
-        print("---------------------------------")
-        print(self.TOP.shape,"---------------", self.BOTTOM.shape)
-        print("---------------------------------")
-        print(type(self.TOP),"---------------", type(self.BOTTOM))
-        print("---------------------------------")
 
     def _remove_duplicates(self, x):
         return np.unique(x, axis=1)
@@ -129,13 +124,14 @@ class PAFull(BaseAnalysis):
     @_clean_duplicates
     def join(self, l):
         l = list(l)
+        if not l:
+            return self.bottom()
         return np.hstack(l)
 
     def _set_rep(self, x):
         return { tuple(col) for col in x.transpose() }
 
     def equiv(self, x, y):
-        print(type(x), type(y))
         #x,y = map(self._set_rep, (x,y))
         return self._set_rep(x)==self._set_rep(y)
 
@@ -190,14 +186,14 @@ class PAFull(BaseAnalysis):
                     case ASTS.BaseComp(lhs=lhs, rhs=rhs):
                         i = lhs.id
                         match expr:
-                            case ASTS.VarNeq() | ASTS.VarConsNeq:
+                            case ASTS.VarNeq() | ASTS.VarConsNeq():
                                 pass
                             case ASTS.VarEq():
                                 j=rhs.id
                                 return x[:, x[i] == x[j]]
-                            case ASTS.VarConsEq:
+                            case ASTS.VarConsEq():
                                 p = _parity_val(rhs)
-                                return self._assume_var_parity(p)
+                                return self._assume_var_parity(lhs, p, x)
             case ASTS.Assert():
                 return self._assume_assert(ast, x)
             case _:

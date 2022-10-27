@@ -1,0 +1,83 @@
+n i j
+
+L0  n := 0                          L1
+L1  i := 0                          L2
+L2  j := 0                          L3
+L3  assert (SUM i = SUM j n)        L4
+L4  assert (EVEN i EVEN n EVEN j)   L5
+
+# randomly assign 1 or 2 to i
+L5  n := ?                          L6
+L6  assume n = 0                    L7
+L7  i := 1                          L200
+L6  assume n != 0                   L8
+L8  i := 2                          L200
+L200 assume TRUE                    L10
+
+# Showcasing the left/sum reduction:
+
+# if i is 2, decrement it
+L10 assume i = 2                    L11
+L11 i := i-1                        L12
+L10 assume i != 2                   L12
+
+# here i must be equal to 1
+L12 j:=1                            L13
+L13 assert (SUM i= SUM j)           L14
+
+L14 assert (ODD i)                  L15
+# The above cannot be proven simply by using a trivial combination
+# (the cartezian product) because the parity analysis is not aware
+# that earlier i was either 1 or 2, and was decremented to 1 when it
+# was 2 - instead, it only "knows" that i was either even or odd, and
+# thus couldn't infer that decrementing i when it is equal to 2 takes
+# care of all cases when i is even.
+
+
+
+# Showcasing the right/sum reduction:
+
+L200 assume TRUE                    L20
+# Back to the state where i was randomly assigned 1 or 2
+
+L20  n:=?                           L21
+L21  assert (EVEN i)                L22
+# Non provable, i can be 1 or 2 here.
+
+L22  assert (EVEN i)                L23
+# Now we do know that i is even (because we went past the assertion).
+# Only the parity analysis absorbs that information, however, and thus
+# the below assertion is only possible to prove when using combination
+# with reductions:
+L23  j:=2                           L24
+L24  assert(SUM i = SUM j)          L25
+
+
+# More complicated example requiring left reduction:
+L200 assume TRUE                    L30
+# Back to the state where i was randomly assigned 1 or 2
+
+L30  assume (i=1)                   L31
+L31  j:=3                           L35
+L30  assume (i!=1)                  L32
+L32  j:=4                           L35
+
+# When i=1 we assigned j=3, when i=2 we assigned j=4. Thus i and j
+# have the same parity (in all cases). As before, the parity analysis
+# alone could not know that i=2 and i=1 were the only cases and thus
+# this can not be inferred without reduction:
+L35  assert (EVEN i EVEN j) (ODD i ODD j) L36
+
+# Now we will constrict the parity:
+L36  assert (EVEN j)                      L37
+# (this cannot be proven as it is not true when i=1,j=3)
+
+# Because we passed the assertion, now i and j are guaranteed
+# to be even, so it must be that i=2, j=4 resulting in i+j=6
+# (unlike when i=1, j=3 and i+j=4). To verify this requires
+# right/sum analysis reduction as only the parity analysis constricts
+# by the parity assertion.
+L37  n:=2                                 L38
+L38  assert (SUM i = SUM n)               L39
+L39  n:=6                                 L40
+L40  assert (SUM i j = SUM n)             L41
