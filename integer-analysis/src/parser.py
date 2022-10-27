@@ -161,7 +161,7 @@ class Parser:
     @_with_trailing_advance
     def _parse_label(self) -> int:
         #self._expect_cur_token(TokenKind.LABEL)
-        assert self._tkind() == TokenKind.LABEL
+        assert self._tkind() == TokenKind.LABEL, f"Expected label, encountered token {self._token}"
         return self._token.ind
 
     @_with_trailing_advance

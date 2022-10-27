@@ -149,6 +149,9 @@ def run_analysis(method: Type[analysis.BaseAnalysis]):
     fname = argv[1]
     with open(fname, 'r') as f:
         text = f.read()
+    print(f"Program:\n{text}")
+    longest_line_len = max(map(len,text.splitlines()))
+    print("-"*longest_line_len+"\n")
     Thread(target=loading_msg, args=(basename(fname),)).start()
     p = Parser(text)
     cfg, num_vars = p.parse_complete_program()
