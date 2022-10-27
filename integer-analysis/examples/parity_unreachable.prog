@@ -1,0 +1,25 @@
+n k i j
+
+L1  i := 0                               L3
+L3  n := ?                               L5
+
+# loop until i=n, incrementing i twice every iteration
+L5  i := i+1                             L6
+L6  i := i+1                             L7
+L7  assume i = n                         L8
+L7  assume i != n                        L5
+# i remains even throughout the loop
+
+L8  j:=3                                L9
+# j is odd
+
+L9  assume (i=j)                        L10
+L10 assert (ODD i EVEN i)               L12
+# L10 is unreachable code, since i is even and j is odd.
+# The assertion which obviously describes and impossible condition
+# (i being both odd and even) is verified as true because we are
+# in a bottom state (in unreachable code, every assertion is true)
+
+L9  assume (i!=j)                       L11
+L11 assert (ODD i EVEN i)               L12
+# Here we can see that the assertion fails as it normally does

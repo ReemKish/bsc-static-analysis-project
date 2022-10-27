@@ -1,5 +1,6 @@
 python3.10 src/parity_analysis.py examples/parity_intro.prog
 python3.10 src/parity_analysis.py examples/parity_adv.prog
+python3.10 src/parity_analysis.py examples/parity_unreachable.prog
 
 python3.10 src/summation_analysis.py tests/summation/basic.prog
 python3.10 src/summation_analysis.py tests/summation/disjc.prog
