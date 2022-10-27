@@ -1,0 +1,27 @@
+n i j
+
+L0  n := ?                               L1
+
+# opposing parities
+L1  i := 1                               L2
+L2  j := 2                               L3
+L3  assert (ODD i)                       L4
+L4  assert (EVEN j)                      L5
+
+# loop until i=n, incrementing i and decrementing j every iteration
+L5  i := i+1                             L6
+L6  j := j-1                             L7
+L7  assume i = n                         L8
+L7  assume i != n                        L5
+
+# Since i and j are both incremented/decremented every step their parities
+# remain opposing throughout the loop, and they stay so afterwards:
+L8  assert (EVEN i ODD j) (ODD i EVEN j) L9
+# We can prove this since the parity analysis uses a relational product-esque
+# technique.
+
+# We can verify the above without knowing the exact parity of i:
+L9  assert (EVEN i)               L10
+L10  assert (ODD i)                L11
+# (both assertions are not mistakenly proven by the analysis)
+

@@ -1,0 +1,14 @@
+python3.10 src/parity_analysis.py examples/parity_intro.prog
+python3.10 src/parity_analysis.py examples/parity_adv.prog
+
+python3.10 src/summation_analysis.py tests/summation/basic.prog
+python3.10 src/summation_analysis.py tests/summation/disjc.prog
+
+python3.10 src/combination_analysis.py examples/combined.prog fullreduction
+python3.10 src/combination_analysis.py examples/combined.prog noreduction
+python3.10 src/combination_analysis.py examples/combined.prog parityreduction
+python3.10 src/combination_analysis.py examples/combined.prog sumreduction
+
+maybe?:
+python3.10 src/summation_analysis.py tests/summation/loop1.prog
+python3.10 src/summation_analysis.py tests/summation/loop2.prog

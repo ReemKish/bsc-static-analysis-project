@@ -1,0 +1,53 @@
+n k i j
+
+
+L0  assume TRUE                          L1
+L1  i := 1                               L3
+L3  n := ?                               L5
+
+# loop until i=n, incrementing i twice every iteration
+L5  i := i+1                             L6
+L6  i := i+1                             L7
+L7  assume i = n                         L8
+L7  assume i != n                        L5
+
+# Notice that i remains odd throughout every loop iteration, since we
+# increment it twice. When n is even, the above loop is infinite because
+# i=n will never be true. If the loop does terminate, however, we can
+# infer that n=i is odd:
+L8  assert (ODD n)                      L9
+
+
+# Now let us consider another program:
+L0   assume TRUE                          L20
+L20  n:=?                                 L21
+L21  k:=?                                 L220
+
+L220  assume TRUE                         L221
+L221  assert(EVEN n ODD k) (ODD n EVEN k) L222
+# We do not know anything about n and k, they might have the same parities
+# this assertions is correctly unverified.
+
+L220  assume TRUE                         L22
+
+# Opposing parities
+L22  i:=?                                 L23
+L23  j:=i+1                               L24
+
+# loop until i=n, incrementing i twice every iteration
+L24  i := i+1                             L25
+L25  i := i+1                             L26
+L26  assume i = n                         L27
+L26  assume i != n                        L24
+
+L27  skip                                 L30
+
+# loop until j=k, incrementing j twice every iteration
+L30  j := j+1                             L31
+L31  j := j+1                             L32
+L32  assume j = k                         L33
+L32  assume j != k                        L30
+
+L33  skip                                 L40
+
+L40  assert(EVEN n ODD k) (ODD n EVEN k)  L41
