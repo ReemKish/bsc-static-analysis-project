@@ -1,2 +1,2 @@
-# tau-static-analysis
-Project for the course Program Analysis and Verification (0368-4479) of Tel Aviv University.
+# bsc-static-analysis
+Project for the B.Sc. course "03684479 Program Analysis and Verification" of Tel Aviv University.
